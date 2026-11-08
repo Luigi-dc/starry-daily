@@ -1,0 +1,184 @@
+{
+  "source": "NASA Science",
+  "sourceUrl": "https://science.nasa.gov/",
+  "fetchedAt": "2026-11-08T14:45:10.557Z",
+  "items": [
+    {
+      "title": "APOD: 2026 November 8 – Major Fireball Meteor",
+      "link": "https://science.nasa.gov/image-article/apod-2026-november-8-major-fireball-meteor/",
+      "date": "2026-11-08",
+      "summary": "",
+      "categories": [
+        "APOD"
+      ],
+      "image": "https://assets.science.nasa.gov/content/dam/science/cds/apod/apod/2026/november/meteor2017_Taylor_1200.jpg/jcr:content/renditions/cq5dam.web.1280.1280.jpeg",
+      "content": [
+        "Discover the cosmos! Each day a different image or photograph of our fascinating universe is featured, along with a brief explanation written by a professional astronomer.",
+        "Explanation: The sky glows with soft pinkish colors of fading twilight in this serendipitous mountaintop vista. Taken in subfreezing temperatures, the thoughtfully composed photo shows snowy, rugged peaks seen from a mountain pass on 2017 November 14. Below lies the village of La Villa, Alta Badia in Italy 's Dolomite Alps . Above the nestled village lights, the constellation Ursa Major hangs over the northern horizon. But most stunning is the intense fireball meteor. It was captured during the camera's exposure by chance as it flashed east to west across the northern horizon, under Ursa Major's familiar Big Dipper asterism . Sightings of this major fireball meteor were widely reported in European skies, making it one of the most reported fireball events ever for planet Earth's American Meteor Society and the International Meteor Organization . The meteor's measured track over Germany is consistent with its origin near the active radiant of November's Northern Taurid Meteor Shower , a shower associated with dust from Encke's comet . Tomorrow's picture: witch sky?"
+      ]
+    },
+    {
+      "title": "NASA Awards Moon Base Transportation, Technology, Science Projects",
+      "link": "https://www.nasa.gov/news-release/nasa-awards-moon-base-transportation-technology-science-projects/",
+      "date": "2026-11-07",
+      "summary": "NASA announced a suite of awards and mission updates on Saturday to expand the agency’s Moon Base exploration, science, and infrastructure capabilities. The investments will advance commercial robotic deliveries, a nuclear-powered rover named PROMISE, launch and orbital transfer services, and surfac",
+      "categories": [],
+      "image": "https://www.nasa.gov/wp-content/uploads/2026/11/moon-base-artists-concept.jpg",
+      "content": [
+        "NASA announced a suite of awards and mission updates on Saturday to expand the agency's Moon Base exploration, science, and infrastructure capabilities. The investments will advance commercial robotic deliveries, a nuclear-powered rover named PROMISE, launch and orbital transfer services, and surface infrastructure as the agency works with American industry to establish a sustained presence on the Moon’s South Pole.",
+        "The agency shared the news at the MAX POWER aerospace expo and air show at NASA’s Kennedy Space Center in Florida.",
+        "“We are building the Moon Base mission by mission,” said NASA Administrator Jared Isaacman. “Today’s announcements expand nearly every part of that campaign, using the playbook that carried NASA through its greatest eras: fly often, learn, apply those lessons, and get more better and more capable with every mission. When our astronauts return to the Moon, they will arrive with the first elements of the Moon Base already waiting for them on the surface.”",
+        "“In the eight months since Ignition, we’ve made incredible strides in accomplishing the near impossible: establishing a permanent outpost on the lunar surface,” said Carlos García-Galán, manager, Moon Base Program. “We’ve consolidated numerous efforts into a streamlined program, evolving our human exploration architecture into an iterative and sustained campaign for Moon Base technology development and implementation. Most importantly, we’ve taken action, awarding new contracts and forging new partnerships to accelerate development.”",
+        "To strengthen the cargo lander network needed to support the Moon Base, NASA selected eight companies for the next phase of its CLPS ( Commercial Lunar Payload Services ) initiative. The companies are eligible to compete for future lunar surface delivery missions under the new CLPS 2 contract:",
+        "Under the CLPS 2 framework, the companies will provide lunar delivery services, including managing, building, and operating landers that transport NASA science, technology, and infrastructure payloads to the Moon.",
+        "The CLPS 2 framework is a 10-year, multiple-award, indefinite-delivery/indefinite-quantity master contract with a combined maximum value of $10 billion. NASA increased the value of the current CLPS 1.0 contract from $2.6 billion to $4.2 billion to support initial Phase One Moon Base objectives. The original CLPS contract will remain in place through November 2028, with an additional five-year period to complete awarded lunar deliveries through November 2033.",
+        "NASA also announced it is moving forward with development of PROMISE (Polar Rover for Observation, Mapping, and In-Situ Exploration) . Carrying science instruments and technology demonstrations, the six-wheeled rover will land at the Moon’s South Pole to characterize the surface and subsurface, assess resource potential, and provide data to enable landing site selection, as well as future infrastructure and exploration activities. The nuclear-powered rover can operate during long lunar nights and within permanently shadowed regions thought to harbor ice, which is crucial for a sustained human presence on the Moon.",
+        "The agency’s Jet Propulsion Laboratory in Southern California, a division of Caltech, will manage the mission and build the rover from a combination of spare flight components and engineering test models for NASA’s Curiosity and Perseverance Mars rovers. Using proven hardware, software, and Mars rover operation approaches significantly reduces cost and enables integration and testing of the complex PROMISE rover on a shorter timeline. NASA has assessed the compatibility of the hardware with the lunar environment and determined it can tolerate the harsh conditions found near the Moon’s South Pole.",
+        "The PROMISE rover will carry a drill to extract regolith, or lunar dust, to characterize ice and other resources from approximately 3 feet (1 meter) below the surface, spectrometers for analyzing the chemical composition of surface material, temperature and radiation sensors, and visible-light cameras. It will demonstrate a next-generation, radiation-tolerant computing system, NASA’s High Performance Spaceflight Computing , and advanced autonomy sensors and algorithms. NASA is targeting late 2028 to launch PROMISE and planning an 18-month mission for the rover.",
+        "NASA awarded Blue Origin a $94 million base contract, with an option period worth an additional $140 million based on performance to deliver PROMISE to the lunar South Pole. The award expands the task order awarded in May 2026 to deliver two lunar terrain vehicles to the Moon. Blue Origin will use its Mark 1 lander to deliver and deploy the rover as part of the Moon Base’s first phase.",
+        "Delivering Moon Base infrastructure will require a robust transportation network between Earth and the Moon. Orbital Transfer Vehicles (OTVs) act like long-distance freight trucks, carrying large loads across space. Lunar landers handle the final delivery, bringing supplies, equipment, and infrastructure safely down to the Moon’s surface.",
+        "To demonstrate those capabilities, NASA awarded six task orders as part of the agency’s Venture-Class Acquisition of Dedicated and Rideshare (VADR) launch services contract. The awards were given to Arrow Science and Technology, Blue Origin, and Impulse Space to integrate and transport Moon Base cargo.",
+        "Three mission types will allow NASA flexibility to fly science and technology demonstrations when they are ready."
+      ]
+    },
+    {
+      "title": "PROMISE",
+      "link": "https://www.nasa.gov/mission/promise/",
+      "date": "2026-11-07",
+      "summary": "Explore the PROMISE Lunar Rover’s Payload The PROMISE Payload The PROMISE rover will carry an extensive payload of science instruments and technology demonstrations sponsored by NASA’s Science Mission Directorate, Research and Technology Mission Directorate, and Human Spaceflight Mission Directorate",
+      "categories": [
+        "Curiosity (Rover)",
+        "Earth's Moon",
+        "Exploration Systems Development Mission Directorate"
+      ],
+      "image": "https://www.nasa.gov/wp-content/uploads/2026/11/promise-7.jpg",
+      "content": [
+        "NASA’s Polar Rover for Observation, Mapping, and In-Situ Exploration (PROMISE), will serve as a scout for Moon Base operations and prospect for resources near the lunar South Pole.",
+        "For this foundational mission in the Moon Base Program, NASA will deploy a nuclear-powered rover to the Moon’s South Pole to study the surface and subsurface while also prospecting for resources and gathering data that will be used to help establish humanity’s first lunar outpost. Being constructed largely from existing hardware developed for NASA’s ongoing Mars rover missions, PROMISE will carry an extensive payload of science instruments and technology demonstrations.",
+        "From the Mars Yard at NASA’s Jet Propulsion Laboratory to the Moon, the agency’s PROMISE rover mission will transform existing hardware into a vehicle loaded with science instruments and technology demonstrations that will help NASA prepare for humanity’s first lunar outpost.",
+        "NASA’s Jet Propulsion Laboratory in Southern California, a division of Caltech, will deliver the PROMISE vehicle for a late 2028 launch and an 18-month primary mission, capitalizing on over three decades of expertise building and operating Mars rovers. The lunar rover will combine proven hardware that has supported NASA’s Curiosity and Perseverance Mars rover missions with a flight-spare multi-mission radioisotope thermoelectric generator, essentially a nuclear generator, for power. To build the PROMISE rover, engineers at NASA JPL are transforming the electronics, body structure, and mobility system from the duplicate version of Curiosity that has served as the vehicle system test bed for the Mars mission. They will integrate additional electronics, flight-spare, and test-bed parts built for the Curiosity and Perseverance missions into the PROMISE rover.",
+        "The new, SUV-size vehicle will host a suite of science instruments and technology demonstrations that will enable it to characterize the lunar surface and subsurface, assess resource potential, and provide critical data in support of future infrastructure and exploration activities. A commercial cargo lander will deliver PROMISE to the Moon’s South Pole, where the rover will rely on its nuclear generator to operate during lunar nights and in frigid craters and depressions known as permanently shadowed regions. Scientists believe ice — and other valuable resources essential for sustainable exploration — may be preserved within some of these regions.",
+        "NASA is embarking on one of its most ambitious endeavors: building humanity’s first outpost on another celestial body, a place where astronauts will live, work, and explore near the Moon’s South Pole. PROMISE is part of the initial phase of the Moon Base, which includes a rapid series of robotic missions to scout, experiment, and prepare for astronaut surface operations. A division of Caltech, NASA JPL manages the PROMISE rover on behalf of the agency’s Human Spaceflight Mission Directorate.",
+        "The PROMISE rover will carry an extensive payload of science instruments and technology demonstrations sponsored by NASA’s Science Mission Directorate, Research and Technology Mission Directorate, and Human Spaceflight Mission Directorate. Data provided by the rover mobility system’s interaction with the Moon’s surface will complement science instrument data on volatiles, together providing a glimpse into locations where no human (or robot) has gone before.",
+        "The payload includes a drill to extract regolith to characterize water ice and other volatiles from 3.3 feet (1 meter) below the surface, spectrometers for analyzing the chemical composition of regolith, temperature and radiation sensors, and visible-light cameras. The mission will demonstrate a next-generation, radiation-tolerant computing system along with advanced autonomy sensors and algorithms designed to support onboard capabilities.",
+        "To view this video please enable JavaScript, and consider upgrading to a web browser that supports HTML5 video",
+        "The PROMISE rover carries the science instruments described below. The TRIDENT , MSOLO , NIRVSS , and NSS instruments are also flying on NASA’s Volatiles Investigating Polar Exploration Rover ( VIPER ) mission. Together, VIPER and PROMISE will provide complementary data sets from two different areas of the South Pole, informing future Moon Base developments.",
+        "The Regolith and Ice Drill for Exploring New Terrain (TRIDENT) is a rotary percussive drill that will extract regolith (the fine dust and rocky material covering the Moon’s surface) from up to 3.3 feet (1 meter) below the surface in 4-inch (10-centimeter) increments, depositing it on the surface for analysis. The drill will measure the strength and compactness of the regolith as well as its temperature. It will be stowed on the rover’s top deck and deployed to the surface for drilling operations. It is designed and led by Honeybee Robotics, a subsidiary of Blue Origin.",
+        "A commercial mass spectrometer modified to withstand the lunar environment, Mass Spectrometer Observing Lunar Operations ( MSOLO ) will analyze the chemical makeup of the volatiles released by the subsurface regolith brought up by TRIDENT. It is led by NASA’s Kennedy Space Center in Florida.",
+        "The Near-Infrared Volatiles Spectrometer System (NIRVSS) is designed to detect which, if any, ices are present in the lunar regolith and to characterize the mineralogy of the surface. It is led by NASA’s Ames Research Center in California’s Silicon Valley.",
+        "The Neutron Spectrometer System (NSS) will help locate water under the surface by detecting the abundance of hydrogen. NSS is built by Lockheed Martin and led by NASA Ames."
+      ]
+    },
+    {
+      "title": "NASA Seeks Next Generation of Explorers to Join Astronaut Corps",
+      "link": "https://www.nasa.gov/news-release/nasa-seeks-next-generation-of-explorers-to-join-astronaut-corps/",
+      "date": "2026-11-07",
+      "summary": "NASA is looking for the explorers who will help write the next chapter of human spaceflight. Applications are now open for the agency’s next class of astronauts, who will join NASA as America returns to the Moon, builds the Moon Base, and lays the groundwork for the first crewed missions to Mars. Th",
+      "categories": [
+        "Astronauts",
+        "Becoming an Astronaut",
+        "Candidate Astronauts"
+      ],
+      "image": "https://www.nasa.gov/wp-content/uploads/2026/11/jsc2025e076292large.jpg",
+      "content": [
+        "NASA is looking for the explorers who will help write the next chapter of human spaceflight.",
+        "Applications are now open for the agency’s next class of astronauts, who will join NASA as America returns to the Moon, builds the Moon Base, and lays the groundwork for the first crewed missions to Mars.",
+        "The next generation of astronauts will train to operate on the lunar surface, live and work beyond Earth, and take on missions that will push the boundaries of human exploration farther than ever before.",
+        "U.S. citizens interested in joining the astronaut corps have until 11:59 p.m. EST Thursday, Dec. 3, to submit their completed application materials at:",
+        "“This is an extraordinary time to join NASA’s astronaut corps,” said NASA Administrator Jared Isaacman. “The people we select could walk on the Moon, live and work at the Moon Base, and help pioneer the systems and operations that will ultimately carry crews to Mars. Those missions will demand technical excellence, sound judgment, teamwork, and courage. NASA’s astronaut corps has always called on remarkable Americans willing to take on extraordinary challenges in service to the nation. If you are ready to join that tradition, come help write the next chapter of humanity’s greatest adventure.”",
+        "NASA expects to make its final selection in late 2027 to begin training as the next class of astronaut candidates.",
+        "“The window is open. The mission is waiting. And the only thing missing from the greatest adventure humanity has ever embarked upon is you,” said NASA Deputy Administrator Matt Anderson.",
+        "The agency last opened applications in 2024. From more than 8,000 applications, 10 astronaut candidates were selected in 2025 and are currently completing nearly two years of training.",
+        "“For those who apply, becoming a NASA astronaut is more than a career opportunity,” said Scott Tingle, chief astronaut and chair of the Astronaut Selection Board at NASA’s Johnson Space Center in Houston. “It is a chance to join a legacy of explorers who have pushed the boundaries of discovery and play a role in the missions that will shape humanity’s future in space. The next generation of astronaut candidates could help write history while inspiring future scientists, engineers, and explorers.\"",
+        "Since the 1960s, NASA has selected 370 people to train as astronaut candidates for its increasingly challenging missions. The agency has 32 astronauts active in the astronaut corps, and selected applicants will join their ranks to study spacewalking, lunar geology, operations of high-performance aircraft, and more.",
+        "The basic requirements to apply include United States citizenship and a master’s degree in a STEM field, including engineering, biological science, physical science, or computer science from an accredited institution. The requirement for the master’s degree can also be met by:",
+        "Candidates must also have at least three years of related professional experience after completing their qualifying degree.",
+        "For pilots, the professional experience requirement may be met through the following flight experience:",
+        "For medical doctors, residency training may count toward the professional experience requirement and must be completed by July 2027."
+      ]
+    },
+    {
+      "title": "APOD: 2026 November 7 – De Gerlache-Kocher Massif",
+      "link": "https://science.nasa.gov/image-article/apod-2026-november-7-de-gerlache-kocher-massif/",
+      "date": "2026-11-07",
+      "summary": "",
+      "categories": [
+        "APOD"
+      ],
+      "image": "https://assets.science.nasa.gov/content/dam/science/cds/apod/apod/2026/november/GerlacheKocherMassif_Sans.jpg/jcr:content/renditions/cq5dam.web.1280.1280.jpeg",
+      "content": [
+        "Discover the cosmos! Each day a different image or photograph of our fascinating universe is featured, along with a brief explanation written by a professional astronomer.",
+        "Explanation: De Gerlache-Kocher massif looms on the visible horizon in this close-up of the edge of the Moon. The mountainous formation rises about 4 kilometers above its surroundings and is located very close to the lunar south pole. Boasting permanently shadowed crater floors that likely contain deposits of water ice and peaks that receive almost continuous sunlight for solar power generation, the south polar region is consider a prime location for the first human settlement on the Moon. In fact , De Gerlache-Kocher massif itself has been considered as a potential landing site for future crewed Artemis missions to the Moon . The remarkable telescopic image of the massif at the lunar limb was captured on October 31. Then, a favorable libration angle or lunar wobble enhanced this oblique view across the Moon's south pole. Tomorrow's picture: meteoric"
+      ]
+    },
+    {
+      "title": "GR SIG Seminar, 6 Nov 2026",
+      "link": "https://science.nasa.gov/astrophysics/programs/physics-of-the-cosmos/community/gr-sig-seminar-6-nov-2026/",
+      "date": "2026-11-06",
+      "summary": "Gamma Ray SIG Seminar 12:00pm ET",
+      "categories": [
+        "Physics of the Cosmos"
+      ],
+      "image": "https://assets.science.nasa.gov/content/dam/science/cds/svs/a010000/a012100/a012101/LMC_Pulsar_Multi.jpg/jcr:content/renditions/cq5dam.web.1280.1280.jpeg",
+      "content": [
+        "I will talk about GammaTPC, a new MeV-GeV gamma-ray instrument based on liquid argon time projection chamber (LAr TPC) technology. This technology leverages developments from neutrino physics and dark matter detection by high-energy physics over the last two decades. Core to GammaTPC is GAMPix, a new fine-grained charge readout architecture that achieves low noise readout at very low power. There are other challenges to fielding a liquid noble TPC in low Earth orbit."
+      ]
+    },
+    {
+      "title": "AAS Meeting 249, Jan 2027",
+      "link": "https://science.nasa.gov/astrophysics/programs/physics-of-the-cosmos/community/aas-meeting-249-jan-2027/",
+      "date": "2026-11-06",
+      "summary": "AAS Meeting Joint with the Historical Astronomy Division, Salt Lake City, Utah 10-14 Jan 2027",
+      "categories": [
+        "Physics of the Cosmos"
+      ],
+      "image": "https://assets.science.nasa.gov/content/dam/science/missions/hubble/mission/35th-anniversary/logo-aas.jpg/jcr:content/renditions/cq5dam.web.1280.1280.jpeg",
+      "content": [
+        "The 249th AAS meeting (joint with the Historical Astronomy Division) will be held 10–14 January 2027 in Salt Lake City at the Salt Palace Convention Center.",
+        "Join us in the exhibit hall at the NASA booth and attend the NASA session.",
+        "The meeting will be jam-packed with great scientific content and provide ample opportunity for networking with friends and colleagues."
+      ]
+    },
+    {
+      "title": "AI/ML STIG Lecture Series, 9 Nov 2026",
+      "link": "https://science.nasa.gov/astrophysics/programs/cosmic-origins/community/ai-ml-stig-lecture-series-9-nov-2026/",
+      "date": "2026-11-06",
+      "summary": "AI Tool Use for Astronomy, and MCP for Data Archives. Speakers: Dan Gause, Adele Plunkett (NRAO)",
+      "categories": [
+        "Cosmic Origins Program"
+      ],
+      "image": "https://assets.science.nasa.gov/content/dam/science/missions/hubble/releases/2017/11/STScI-01EVT004A3P3KZ8VQ41WV63F77.tif/jcr:content/renditions/cq5dam.web.1280.1280.jpeg",
+      "content": [
+        "Artificial Intelligence & Machine Learning Science and Technology Interest Group",
+        "Large Language Models (LLMs) offer a powerful mechanism for interacting with massive, growing astronomical data archives using natural language. There are, however, several challenges to their scientific use for data-driven astronomy, rooted in the distinct schemas, query services and conventions of each archive. In this talk we present STABLE (“Summer Team for Astronomical Benchmarking & LLM Engineering”), an initiative supported by a 2026 CosmicAI Seed Funding Award, which pursued three complementary aspects of AI tools: rigorous benchmarking, infrastructure enhancement, and AI agent development. The primary infrastructure deliverable was MANNA (“MCP Architecture for NOIRLab, NRAO, and Additional Archives”), a Model Context Protocol (MCP) server that gives AI clients standards-based access to astronomy archives. As a component of this talk, we cover the conceptual and technical aspects of MCP components followed by a demo on building an MCP server. We also discuss examples of MCP servers in astronomy, detailing the development and evaluation of MANNA."
+      ]
+    },
+    {
+      "title": "IR STIG Seminar, 10 Nov 2026",
+      "link": "https://science.nasa.gov/astrophysics/programs/cosmic-origins/community/ir-stig-seminar-10-nov-2026/",
+      "date": "2026-11-06",
+      "summary": "Towards Population-Level Exo-Geology: Characterizing the Surfaces, Atmospheres, and Reflective Properties of Hot Rocky Exoplanets. Speaker: Brandon Coy, U Chicago",
+      "categories": [
+        "Cosmic Origins Program"
+      ],
+      "image": "https://assets.science.nasa.gov/content/dam/science/missions/webb/www-migrated-assets/science/stsci-01gxs12mt66h4xfzbeqzty1wcw.png/jcr:content/renditions/cq5dam.web.1280.1280.png",
+      "content": [
+        "Studying the prevalence and origins of atmospheres on rocky exoplanets is a key goal of astrophysics and astrobiology. The James Webb Space Telescope (JWST) is providing the first population-level constraints on the thermal emission of rocky exoplanets orbiting small M stars. These observations have revealed that most of these planets lack thick, Venus-like atmospheres and are likely ‘bare rocks’. In this case, however, thermal emission probes surface properties of the planet. I will show that analyzing these observations homogenously on a population-level can provide the first constraints on ‘exo-geology’ occurring in exoplanet systems.",
+        "Contrary to M-Earths, there is growing evidence for substantial atmospheres on lava worlds, small, primarily rocky planets hot enough to melt their silicate surfaces. I will present results from the LAVALAMPS survey, a JWST program measuring the thermal emission 10 lava worlds to better constrain the origins of these atmospheres. I will also present results from a systematic study of the TESS phase curves of small planets, reporting new detections of the visible light phase curves of 5 lava worlds. Combined with previous observations from Kepler, these results show that lava worlds generally are moderately-to-highly reflective in contrast to the very dark hot Jupiters at similar temperatures."
+      ]
+    },
+    {
+      "title": "AI/ML STIG Lecture Series, 16 Nov 2026",
+      "link": "https://science.nasa.gov/astrophysics/programs/cosmic-origins/community/ai-ml-stig-lecture-series-16-nov-2026/",
+      "date": "2026-11-06",
+      "summary": "Multi-Agent Systems and Orchestration. Speaker: Boris Bolliet, University of Cambridge",
+      "categories": [
+        "Cosmic Origins Program"
+      ],
+      "image": "https://assets.science.nasa.gov/content/dam/science/missions/hubble/releases/2017/11/STScI-01EVT004A3P3KZ8VQ41WV63F77.tif/jcr:content/renditions/cq5dam.web.1280.1280.jpeg",
+      "content": [
+        "Artificial Intelligence & Machine Learning Science and Technology Interest Group"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#05060e" />
+    <title>Starry Daily — mappa astronomica 3D</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a0d1a'/%3E%3Cpath d='M16 5l2.6 7.4L26 15l-7.4 2.6L16 25l-2.6-7.4L6 15l7.4-2.6z' fill='%237fd8ff'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <canvas id="sky" aria-label="Mappa celeste tridimensionale"></canvas>
+    <div id="labels" class="labels"></div>
+    <div class="vignette" aria-hidden="true"></div>
+
+    <div class="hud">
+      <p class="hud-title">Mappa celeste · J2000</p>
+      <p class="hud-coords" id="hud-coords">RA 05h 36m · Dec −05°</p>
+      <div class="hud-actions">
+        <button class="round-btn" id="zoom-in" type="button" aria-label="Avvicina">+</button>
+        <button class="round-btn" id="zoom-out" type="button" aria-label="Allontana">−</button>
+      </div>
+      <button class="pill-btn" id="toggle-constellations" type="button" aria-pressed="false">Costellazioni</button>
+      <p class="hud-hint">Trascina per ruotare · rotella per lo zoom · clicca una foto per volare sul corpo celeste</p>
+    </div>
+
+    <aside class="panel">
+      <header class="panel-head">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">✦</span>
+          <div>
+            <h1>Starry Daily</h1>
+            <p>Atlante del cielo profondo</p>
+          </div>
+        </div>
+        <button class="ghost-btn" id="reset" type="button">Ricentra</button>
+      </header>
+
+      <div class="search">
+        <div class="search-field">
+          <span class="search-icon" aria-hidden="true">⌕</span>
+          <input
+            class="search-input"
+            id="search-input"
+            type="search"
+            placeholder="Cerca un corpo celeste o un pianeta"
+            autocomplete="off"
+            spellcheck="false"
+            role="combobox"
+            aria-label="Cerca corpi celesti e pianeti"
+            aria-expanded="false"
+            aria-controls="search-results"
+          />
+          <kbd class="search-kbd" aria-hidden="true">/</kbd>
+        </div>
+        <div class="search-results" id="search-results" role="listbox" aria-label="Risultati della ricerca" hidden></div>
+      </div>
+
+      <div class="tabs" role="tablist" aria-label="Contenuti">
+        <button class="tab is-active" data-tab="news" role="tab" aria-selected="true" type="button">
+          Notizie spaziali
+        </button>
+        <button class="tab" data-tab="photos" role="tab" aria-selected="false" type="button">
+          Foto telescopi
+        </button>
+      </div>
+
+      <div class="panel-body">
+        <div class="view is-active" id="view-news">
+          <p class="view-lead">Ultimi aggiornamenti dai telescopi e dalle missioni scientifiche.</p>
+          <div id="news-list" class="news-list"></div>
+        </div>
+        <div class="view" id="view-photos">
+          <p class="view-lead">Immagini reali d'archivio. Clicca una foto per portare la mappa su quel corpo celeste.</p>
+          <div class="chips" id="kind-chips"></div>
+          <div id="photo-grid" class="photo-grid"></div>
+
+          <div class="live-head">
+            <h3>Banca dati NASA</h3>
+            <button class="pill-btn" id="refresh-photos" type="button">Aggiorna</button>
+          </div>
+          <p class="live-status" id="live-status">Archivio locale del sito</p>
+          <div class="live-grid" id="live-grid"></div>
+        </div>
+      </div>
+
+      <footer class="panel-foot">
+        <span id="source-note"></span>
+      </footer>
+    </aside>
+
+    <section class="detail" id="detail" hidden>
+      <button class="detail-close" id="detail-close" type="button" aria-label="Chiudi scheda">✕</button>
+      <div class="detail-media">
+        <div class="detail-orb" id="detail-orb" hidden aria-hidden="true">
+          <canvas id="detail-planet"></canvas>
+        </div>
+        <img id="detail-img" alt="" />
+        <span class="detail-badge" id="detail-badge"></span>
+      </div>
+      <div class="detail-body">
+        <p class="eyebrow" id="detail-kind"></p>
+        <h2 id="detail-name"></h2>
+        <p class="detail-meta" id="detail-meta"></p>
+        <p class="detail-desc" id="detail-desc"></p>
+        <dl class="facts" id="detail-facts" hidden></dl>
+        <button class="detail-link" id="detail-source" type="button">Scheda completa</button>
+      </div>
+    </section>
+
+    <section class="reader" id="reader" hidden role="dialog" aria-modal="true" aria-labelledby="reader-title">
+      <div class="reader-scrim" id="reader-scrim"></div>
+      <article class="reader-card">
+        <button class="reader-close" id="reader-close" type="button" aria-label="Chiudi lettore">✕</button>
+        <p class="eyebrow" id="reader-kicker"></p>
+        <h2 id="reader-title"></h2>
+        <p class="reader-meta" id="reader-meta"></p>
+        <div class="reader-body" id="reader-body"></div>
+        <p class="reader-note" id="reader-note"></p>
+      </article>
+    </section>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

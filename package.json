@@ -1,0 +1,23 @@
+{
+  "name": "starry-daily",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Planetario 3D con mappa astronomica, notizie spaziali e foto dei telescopi spaziali.",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "fetch:photos": "node scripts/fetch-photos.mjs",
+    "fetch:news": "node scripts/fetch-news.mjs",
+    "fetch:sky": "node scripts/fetch-sky.mjs"
+  },
+  "dependencies": {
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.187.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.6"
+  }
+}
