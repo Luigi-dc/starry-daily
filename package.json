@@ -3,16 +3,16 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Planetario 3D con mappa astronomica, notizie spaziali e foto dei telescopi spaziali.",
+  "description": "Planetario con il cielo reale (Aladin Lite), notizie spaziali e foto dallo spazio in tempo reale.",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "fetch:photos": "node scripts/fetch-photos.mjs",
-    "fetch:news": "node scripts/fetch-news.mjs",
-    "fetch:sky": "node scripts/fetch-sky.mjs"
+    "fetch:sky": "node scripts/fetch-sky.mjs",
+    "fetch:deepsky": "node scripts/fetch-deepsky.mjs"
   },
   "dependencies": {
+    "aladin-lite": "3.8.2",
     "three": "^0.187.0"
   },
   "devDependencies": {

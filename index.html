@@ -2,40 +2,77 @@
 <html lang="it">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#05060e" />
-    <title>Starry Daily — mappa astronomica 3D</title>
+    <title>Starry Daily — planetario e notizie dallo spazio</title>
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a0d1a'/%3E%3Cpath d='M16 5l2.6 7.4L26 15l-7.4 2.6L16 25l-2.6-7.4L6 15l7.4-2.6z' fill='%237fd8ff'/%3E%3C/svg%3E"
     />
   </head>
   <body>
-    <canvas id="sky" aria-label="Mappa celeste tridimensionale"></canvas>
-    <div id="labels" class="labels"></div>
-    <div class="vignette" aria-hidden="true"></div>
-
-    <div class="hud">
-      <p class="hud-title">Mappa celeste · J2000</p>
-      <p class="hud-coords" id="hud-coords">RA 05h 36m · Dec −05°</p>
-      <div class="hud-actions">
-        <button class="round-btn" id="zoom-in" type="button" aria-label="Avvicina">+</button>
-        <button class="round-btn" id="zoom-out" type="button" aria-label="Allontana">−</button>
+    <main class="sky-wrap">
+      <div id="sky" class="sky" aria-label="Mappa del cielo navigabile"></div>
+      <div class="sky-loading" id="sky-loading">
+        <span class="spinner" aria-hidden="true"></span>
+        <span id="sky-loading-text">Carico il cielo…</span>
       </div>
-      <button class="pill-btn" id="toggle-constellations" type="button" aria-pressed="false">Costellazioni</button>
-      <p class="hud-hint">Trascina per ruotare · rotella per lo zoom · clicca una foto per volare sul corpo celeste</p>
-    </div>
 
-    <aside class="panel">
+      <div class="hud hud-top">
+        <div class="chips" id="kind-chips" role="group" aria-label="Mostra sulla mappa"></div>
+      </div>
+
+      <div class="hud hud-bottom">
+        <div class="hud-readout">
+          <span id="hud-coords">RA — · Dec —</span>
+          <span class="hud-sep" aria-hidden="true">·</span>
+          <span id="hud-fov">campo —</span>
+        </div>
+        <div class="hud-controls">
+          <div class="btn-group">
+            <button class="icon-btn" id="zoom-out" type="button" aria-label="Allontana">−</button>
+            <button class="icon-btn" id="zoom-in" type="button" aria-label="Avvicina">+</button>
+          </div>
+          <button class="pill-btn is-on" id="toggle-constellations" type="button" aria-pressed="true">Costellazioni</button>
+          <label class="select-wrap">
+            <span class="sr-only">Immagine del cielo</span>
+            <select id="survey" class="select"></select>
+          </label>
+          <button class="pill-btn" id="reset" type="button">Ricentra</button>
+        </div>
+        <p class="hud-hint">Trascina per muoverti · rotella o pinch per lo zoom · clicca un nome per la scheda</p>
+      </div>
+
+      <section class="detail" id="detail" hidden aria-live="polite">
+        <button class="close-btn" id="detail-close" type="button" aria-label="Chiudi scheda">✕</button>
+        <div class="detail-media" id="detail-media">
+          <canvas id="detail-planet" hidden></canvas>
+          <span class="detail-badge" id="detail-badge"></span>
+        </div>
+        <div class="detail-body">
+          <p class="eyebrow" id="detail-kind"></p>
+          <h2 id="detail-name"></h2>
+          <p class="detail-meta" id="detail-meta"></p>
+          <p class="detail-desc" id="detail-desc"></p>
+          <dl class="facts" id="detail-facts" hidden></dl>
+        </div>
+      </section>
+    </main>
+
+    <aside class="panel" id="panel">
+      <button class="panel-handle" id="panel-handle" type="button" aria-expanded="false" aria-controls="panel">
+        <span class="panel-grip" aria-hidden="true"></span>
+        <span>Notizie e foto dallo spazio</span>
+      </button>
+
       <header class="panel-head">
         <div class="brand">
           <span class="brand-mark" aria-hidden="true">✦</span>
           <div>
             <h1>Starry Daily</h1>
-            <p>Atlante del cielo profondo</p>
+            <p id="today"></p>
           </div>
         </div>
-        <button class="ghost-btn" id="reset" type="button">Ricentra</button>
       </header>
 
       <div class="search">
@@ -45,80 +82,64 @@
             class="search-input"
             id="search-input"
             type="search"
-            placeholder="Cerca un corpo celeste o un pianeta"
+            placeholder="Cerca: Giove, M31, Orione, NGC 7000…"
             autocomplete="off"
             spellcheck="false"
             role="combobox"
-            aria-label="Cerca corpi celesti e pianeti"
+            aria-label="Cerca nel cielo"
             aria-expanded="false"
             aria-controls="search-results"
           />
           <kbd class="search-kbd" aria-hidden="true">/</kbd>
         </div>
-        <div class="search-results" id="search-results" role="listbox" aria-label="Risultati della ricerca" hidden></div>
+        <div class="search-results" id="search-results" role="listbox" aria-label="Risultati" hidden></div>
       </div>
 
       <div class="tabs" role="tablist" aria-label="Contenuti">
-        <button class="tab is-active" data-tab="news" role="tab" aria-selected="true" type="button">
-          Notizie spaziali
-        </button>
-        <button class="tab" data-tab="photos" role="tab" aria-selected="false" type="button">
-          Foto telescopi
-        </button>
+        <button class="tab is-active" id="tab-news" data-tab="news" role="tab" aria-selected="true" aria-controls="view-news" type="button">Notizie</button>
+        <button class="tab" id="tab-photos" data-tab="photos" role="tab" aria-selected="false" aria-controls="view-photos" type="button">Foto dallo spazio</button>
       </div>
 
       <div class="panel-body">
-        <div class="view is-active" id="view-news">
-          <p class="view-lead">Ultimi aggiornamenti dai telescopi e dalle missioni scientifiche.</p>
+        <div class="view is-active" id="view-news" role="tabpanel" aria-labelledby="tab-news">
           <div id="news-list" class="news-list"></div>
         </div>
-        <div class="view" id="view-photos">
-          <p class="view-lead">Immagini reali d'archivio. Clicca una foto per portare la mappa su quel corpo celeste.</p>
-          <div class="chips" id="kind-chips"></div>
-          <div id="photo-grid" class="photo-grid"></div>
-
-          <div class="live-head">
-            <h3>Banca dati NASA</h3>
-            <button class="pill-btn" id="refresh-photos" type="button">Aggiorna</button>
-          </div>
-          <p class="live-status" id="live-status">Archivio locale del sito</p>
-          <div class="live-grid" id="live-grid"></div>
+        <div class="view" id="view-photos" role="tabpanel" aria-labelledby="tab-photos" hidden>
+          <section class="photo-section" data-source="apod">
+            <h3>Foto astronomica del giorno <small>NASA APOD</small></h3>
+            <div class="photo-feed photo-feed--hero"></div>
+          </section>
+          <section class="photo-section" data-source="epic">
+            <h3>La Terra vista dallo spazio <small>DSCOVR · EPIC</small></h3>
+            <div class="photo-feed photo-feed--strip"></div>
+          </section>
+          <section class="photo-section" data-source="esa">
+            <h3>Webb e Hubble <small>ESA</small></h3>
+            <div class="photo-feed photo-feed--grid"></div>
+          </section>
+          <section class="photo-section" data-source="nasa">
+            <h3>Ultime immagini NASA <small>images.nasa.gov</small></h3>
+            <div class="photo-feed photo-feed--grid"></div>
+          </section>
         </div>
       </div>
 
       <footer class="panel-foot">
-        <span id="source-note"></span>
+        Cielo: Aladin Lite · CDS Strasburgo. Notizie: Spaceflight News API, NASA Science. Foto: NASA, NOAA, ESA.
       </footer>
     </aside>
-
-    <section class="detail" id="detail" hidden>
-      <button class="detail-close" id="detail-close" type="button" aria-label="Chiudi scheda">✕</button>
-      <div class="detail-media">
-        <div class="detail-orb" id="detail-orb" hidden aria-hidden="true">
-          <canvas id="detail-planet"></canvas>
-        </div>
-        <img id="detail-img" alt="" />
-        <span class="detail-badge" id="detail-badge"></span>
-      </div>
-      <div class="detail-body">
-        <p class="eyebrow" id="detail-kind"></p>
-        <h2 id="detail-name"></h2>
-        <p class="detail-meta" id="detail-meta"></p>
-        <p class="detail-desc" id="detail-desc"></p>
-        <dl class="facts" id="detail-facts" hidden></dl>
-        <button class="detail-link" id="detail-source" type="button">Scheda completa</button>
-      </div>
-    </section>
 
     <section class="reader" id="reader" hidden role="dialog" aria-modal="true" aria-labelledby="reader-title">
       <div class="reader-scrim" id="reader-scrim"></div>
       <article class="reader-card">
-        <button class="reader-close" id="reader-close" type="button" aria-label="Chiudi lettore">✕</button>
-        <p class="eyebrow" id="reader-kicker"></p>
-        <h2 id="reader-title"></h2>
-        <p class="reader-meta" id="reader-meta"></p>
-        <div class="reader-body" id="reader-body"></div>
-        <p class="reader-note" id="reader-note"></p>
+        <button class="close-btn" id="reader-close" type="button" aria-label="Chiudi">✕</button>
+        <img class="reader-img" id="reader-img" alt="" hidden />
+        <div class="reader-text">
+          <p class="eyebrow" id="reader-kicker"></p>
+          <h2 id="reader-title"></h2>
+          <p class="reader-summary" id="reader-summary"></p>
+          <a class="primary-btn" id="reader-link" target="_blank" rel="noopener noreferrer">Leggi l'articolo completo ↗</a>
+        </div>
       </article>
     </section>
 

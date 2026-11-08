@@ -1,556 +1,195 @@
 import "./style.css";
-import { SkyView, type SkyTarget } from "./three/sky";
-import { PlanetView } from "./three/planet";
 import { KIND_LABEL, OBJECTS, type Kind, type SkyObject } from "./data/objects";
 import { SOLAR_BODIES, SOLAR_COMPUTED_AT, type SolarBody } from "./data/solar";
-import { buildIndex, searchSky } from "./search";
-import photosJson from "./data/photos.json";
-import newsJson from "./data/news.json";
 import deepskyJson from "./data/deepsky.json";
-import { cachedPhotos, loadLiveNews, loadLivePhotos, type LivePhoto } from "./live";
+import { buildIndex, searchSky } from "./search";
+import { KIND_COLOR } from "./sky/colors";
+import type { Constellation, SkyMap, SkyMarker, SurveyId } from "./sky/aladin";
+import { loadNews, type NewsItem } from "./feeds/news";
+import { loadApod, loadEpic, loadEsa, loadNasaImages, type SpacePhoto } from "./feeds/photos";
+import { PhotoViewer } from "./ui/viewer";
 
-interface Photo {
-  id: string;
-  nasaId: string;
-  nasaTitle: string;
-  telescope: string;
-  credit: string;
-  date: string;
-  file: string;
-  nasaUrl: string;
-}
+/* ---------- catalogo ---------- */
 
-interface NewsItem {
-  title: string;
-  link: string;
-  date: string;
-  summary: string;
-  categories: string[];
-  image?: string;
-  /** Paragrafi dell'articolo salvati in locale per la lettura dentro il sito. */
-  content?: string[];
-}
+const solarBodies = SOLAR_BODIES.filter((body) => !body.observer);
+const famous = OBJECTS;
+/** Il catalogo Messier ripete alcuni oggetti celebri: si tiene la scheda più ricca. */
+const messier = (deepskyJson as { objects: SkyObject[] }).objects.filter(
+  (m) => !famous.some((f) => Math.abs(f.ra - m.ra) * 15 * Math.cos((f.dec * Math.PI) / 180) < 0.2 && Math.abs(f.dec - m.dec) < 0.2),
+);
+const deepObjects: SkyObject[] = [...famous, ...messier];
+const allObjects: SkyObject[] = [...solarBodies, ...deepObjects];
+const objectById = new Map(allObjects.map((o) => [o.id, o]));
+const searchIndex = buildIndex(allObjects);
 
-interface NewsFeed {
-  source: string;
-  sourceUrl: string;
-  fetchedAt: string;
-  items: NewsItem[];
-}
+const toMarker = (o: SkyObject): SkyMarker => ({ id: o.id, name: o.name, kind: o.kind, ra: o.ra, dec: o.dec });
+const deepMarkers = { famous: famous.map(toMarker), messier: messier.map(toMarker) };
 
-const photos = photosJson as Photo[];
-const feed = newsJson as NewsFeed;
-const photoById = new Map(photos.map((p) => [p.id, p]));
-const deepskyObjects = (deepskyJson as { objects: SkyObject[] }).objects;
-const ALL_OBJECTS: SkyObject[] = [...OBJECTS, ...SOLAR_BODIES, ...deepskyObjects];
-const objectById = new Map(ALL_OBJECTS.map((o) => [o.id, o]));
-const searchIndex = buildIndex(ALL_OBJECTS);
+/* ---------- utilità ---------- */
 
 const $ = <T extends HTMLElement>(selector: string): T => document.querySelector(selector) as T;
-
-const canvas = $<HTMLCanvasElement>("#sky");
-const labelLayer = $<HTMLDivElement>("#labels");
-const grid = $<HTMLDivElement>("#photo-grid");
-const chips = $<HTMLDivElement>("#kind-chips");
-const newsList = $<HTMLDivElement>("#news-list");
-const hudCoords = $<HTMLParagraphElement>("#hud-coords");
-const detail = $<HTMLElement>("#detail");
-const searchInput = $<HTMLInputElement>("#search-input");
-const searchResults = $<HTMLDivElement>("#search-results");
-const tabs = Array.from(document.querySelectorAll<HTMLButtonElement>(".tab"));
-const views: Record<string, HTMLElement> = {
-  news: $<HTMLDivElement>("#view-news"),
-  photos: $<HTMLDivElement>("#view-photos"),
+const el = <K extends keyof HTMLElementTagNameMap>(tag: K, className = "", text = ""): HTMLElementTagNameMap[K] => {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text) node.textContent = text;
+  return node;
 };
 
-const planetView = new PlanetView($<HTMLCanvasElement>("#detail-planet"));
+const isSolar = (o: SkyObject): o is SolarBody => o.kind === "planet" || o.kind === "moon" || o.kind === "sun";
 
-/* ---------- etichette di intervallo e formattazione ---------- */
+const dayFmt = new Intl.DateTimeFormat("it-IT", { day: "numeric", month: "short" });
+const longDayFmt = new Intl.DateTimeFormat("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+const timeFmt = new Intl.DateTimeFormat("it-IT", { hour: "2-digit", minute: "2-digit" });
 
-const dateFmt = new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "short" });
-const fmtDate = (iso: string) => {
-  const parsed = new Date(iso);
-  return Number.isNaN(parsed.getTime()) ? iso : dateFmt.format(parsed);
-};
+/** «2 ore fa», «ieri», «5 nov»: per le notizie conta quanto sono fresche. */
+function ago(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const minutes = Math.round((Date.now() - date.getTime()) / 60000);
+  if (minutes < 1) return "adesso";
+  if (minutes < 60) return `${minutes} min fa`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} ${hours === 1 ? "ora" : "ore"} fa`;
+  const days = Math.round(hours / 24);
+  if (days === 1) return "ieri";
+  if (days < 7) return `${days} giorni fa`;
+  return dayFmt.format(date);
+}
+
+function photoDate(photo: SpacePhoto): string {
+  const date = new Date(photo.date.length === 10 ? `${photo.date}T12:00:00Z` : photo.date);
+  return Number.isNaN(date.getTime()) ? "" : dayFmt.format(date);
+}
 
 const raLabel = (hours: number) => {
-  const totalMinutes = Math.round(hours * 60);
-  const h = Math.floor(totalMinutes / 60) % 24;
-  const m = totalMinutes % 60;
-  return `${String(h).padStart(2, "0")}h ${String(m).padStart(2, "0")}m`;
+  const total = Math.round((((hours % 24) + 24) % 24) * 60);
+  return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}h ${String(total % 60).padStart(2, "0")}m`;
 };
-
 const decLabel = (deg: number) => `${deg >= 0 ? "+" : "−"}${Math.abs(deg).toFixed(1)}°`;
+const fovLabel = (fov: number) =>
+  fov >= 1 ? `campo ${fov.toFixed(fov < 10 ? 1 : 0)}°` : fov >= 1 / 60 ? `campo ${(fov * 60).toFixed(1)}′` : `campo ${(fov * 3600).toFixed(0)}″`;
 
-/** Il feed descrive le notizie con una frase di servizio: non va mostrata. */
-const cleanTeaser = (text: string) =>
-  text
-    .replace(/The post\s.*?appeared first on\s[^.]*\.?/i, "")
-    .replace(/\s+/g, " ")
-    .trim();
+$("#today").textContent = longDayFmt.format(new Date());
 
-/* ---------- notizie ---------- */
+/* ---------- mappa del cielo ---------- */
 
-function renderNews(): void {
-  newsList.textContent = "";
-  for (const item of feed.items.slice(0, 10)) {
-    const article = document.createElement("button");
-    article.type = "button";
-    article.className = "news-item";
-    article.addEventListener("click", () => openNews(item));
+let sky: SkyMap | null = null;
+const loading = $<HTMLDivElement>("#sky-loading");
 
-    const meta = document.createElement("div");
-    meta.className = "news-meta";
-    const dot = document.createElement("span");
-    dot.className = "news-dot";
-    const date = document.createElement("span");
-    date.textContent = fmtDate(item.date);
-    const source = document.createElement("span");
-    source.textContent = "NASA";
-    meta.append(dot, date, source);
-
-    const title = document.createElement("h2");
-    title.className = "news-title";
-    title.textContent = item.title;
-
-    article.append(meta, title);
-
-    const teaser = cleanTeaser(item.summary);
-    if (teaser) {
-      const summary = document.createElement("p");
-      summary.className = "news-summary";
-      summary.textContent = teaser;
-      article.append(summary);
-    }
-
-    if (item.categories.length) {
-      const tags = document.createElement("div");
-      tags.className = "news-tags";
-      for (const category of item.categories) {
-        const tag = document.createElement("span");
-        tag.className = "news-tag";
-        tag.textContent = category;
-        tags.append(tag);
-      }
-      article.append(tags);
-    }
-
-    newsList.append(article);
-  }
-
-  const fetched = new Date(feed.fetchedAt);
-  $<HTMLSpanElement>("#source-note").textContent =
-    `Notizie: ${feed.source} · aggiornate ${Number.isNaN(fetched.getTime()) ? "—" : dateFmt.format(fetched)}. ` +
-    `Foto: archivio NASA (Hubble, Spitzer). Pianeti: posizioni calcolate per oggi. ` +
-    `Mappa: stelle del catalogo reale (magnitudine ≤ 6) e costellazioni.`;
-}
-
-/* ---------- galleria ---------- */
-
-const KIND_ORDER: Kind[] = ["nebula", "galaxy", "cluster", "remnant", "blackhole"];
-
-function renderGallery(): void {
-  grid.textContent = "";
-
-  for (const object of OBJECTS) {
-    const photo = photoById.get(object.id);
-    const card = document.createElement("button");
-    card.type = "button";
-    card.className = "photo-card";
-    card.dataset.id = object.id;
-    card.dataset.kind = object.kind;
-
-    const thumb = document.createElement("div");
-    thumb.className = "photo-thumb";
-
-    if (photo) {
-      const img = document.createElement("img");
-      img.src = photo.file;
-      img.alt = `${object.name} — immagine ${photo.telescope}`;
-      img.loading = "lazy";
-      img.decoding = "async";
-      thumb.append(img);
-    }
-
-    const badge = document.createElement("span");
-    badge.className = "badge";
-    badge.textContent = photo ? `Foto · ${photo.telescope}` : "Scheda";
-    thumb.append(badge);
-
-    const meta = document.createElement("div");
-    meta.className = "photo-meta";
-    const title = document.createElement("h3");
-    title.textContent = object.name;
-    const sub = document.createElement("p");
-    sub.textContent = `${KIND_LABEL[object.kind]} · ${object.distance}`;
-    meta.append(title, sub);
-
-    card.append(thumb, meta);
-    card.addEventListener("click", () => selectObject(object.id, { scroll: false }));
-    card.addEventListener("pointerenter", () => hoverObject(object.id));
-    card.addEventListener("pointerleave", () => hoverObject(null));
-
-    grid.append(card);
+async function startSky(): Promise<void> {
+  try {
+    const [{ SkyMap }, skyData] = await Promise.all([import("./sky/aladin"), import("./data/sky.json")]);
+    const constellations = (skyData.default as unknown as { constellations: Constellation[] }).constellations;
+    sky = await SkyMap.create($("#sky"), solarBodies.map(toMarker), deepMarkers, constellations);
+    sky.onSelect = (id) => selectObject(id);
+    sky.onMove = ({ ra, dec, fov }) => {
+      $("#hud-coords").textContent = `RA ${raLabel(ra)} · Dec ${decLabel(dec)}`;
+      $("#hud-fov").textContent = fovLabel(fov);
+    };
+    const select = $<HTMLSelectElement>("#survey");
+    for (const survey of sky.availableSurveys()) select.append(new Option(survey.label, survey.id));
+    select.addEventListener("change", () => sky?.setSurvey(select.value as SurveyId));
+    loading.hidden = true;
+  } catch (error) {
+    console.error(error);
+    $("#sky-loading-text").textContent =
+      "Il cielo non si è caricato: serve un browser con WebGL2 e la connessione ai server delle immagini. Riprova più tardi.";
+    loading.classList.add("is-error");
   }
 }
+
+const FILTERS: Array<{ kind: Kind | null; label: string }> = [
+  { kind: null, label: "Tutto" },
+  { kind: "nebula", label: "Nebulose" },
+  { kind: "galaxy", label: "Galassie" },
+  { kind: "cluster", label: "Ammassi" },
+  { kind: "remnant", label: "Supernovae" },
+];
 
 function renderChips(): void {
-  chips.textContent = "";
-  const options: Array<{ kind: Kind | null; label: string }> = [
-    { kind: null, label: "Tutte" },
-    ...KIND_ORDER.map((kind) => ({ kind, label: KIND_LABEL[kind] })),
-  ];
-
-  for (const option of options) {
-    const chip = document.createElement("button");
+  const chips = $("#kind-chips");
+  for (const filter of FILTERS) {
+    const chip = el("button", "chip", filter.label);
     chip.type = "button";
-    chip.className = `chip${option.kind === null ? " is-active" : ""}`;
-    chip.textContent = option.label;
+    chip.setAttribute("aria-pressed", String(filter.kind === null));
+    if (filter.kind) chip.style.setProperty("--chip", KIND_COLOR[filter.kind]);
     chip.addEventListener("click", () => {
-      chips.querySelectorAll(".chip").forEach((c) => c.classList.remove("is-active"));
-      chip.classList.add("is-active");
-      const kind = option.kind;
-      sky.setFilter(kind);
-      grid.querySelectorAll<HTMLElement>(".photo-card").forEach((card) => {
-        card.hidden = kind !== null && card.dataset.kind !== kind;
-      });
+      chips.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", "false"));
+      chip.setAttribute("aria-pressed", "true");
+      sky?.setFilter(filter.kind);
     });
     chips.append(chip);
   }
 }
 
-/* ---------- banca dati NASA live ---------- */
+/* ---------- scheda dell'oggetto ---------- */
 
-const liveGrid = $<HTMLDivElement>("#live-grid");
-const liveStatus = $<HTMLParagraphElement>("#live-status");
+const detail = $<HTMLElement>("#detail");
+const planetCanvas = $<HTMLCanvasElement>("#detail-planet");
+let planetView: { show(id: string): boolean; hide(): void } | null = null;
 
-function renderLivePhotos(photos: LivePhoto[], at: number): void {
-  liveGrid.textContent = "";
-  for (const photo of photos) {
-    const card = document.createElement("button");
-    card.type = "button";
-    card.className = "photo-card";
-
-    const thumb = document.createElement("div");
-    thumb.className = "photo-thumb";
-    const img = document.createElement("img");
-    img.src = photo.thumb;
-    img.alt = photo.title;
-    img.loading = "lazy";
-    img.decoding = "async";
-    thumb.append(img);
-
-    const meta = document.createElement("div");
-    meta.className = "photo-meta";
-    const title = document.createElement("h3");
-    title.textContent = photo.title;
-    const sub = document.createElement("p");
-    sub.textContent = [photo.telescope, fmtDate(photo.date)].filter(Boolean).join(" · ");
-    meta.append(title, sub);
-
-    card.append(thumb, meta);
-    card.addEventListener("click", () => openPhotoReader(photo));
-    liveGrid.append(card);
+async function showPlanet(id: string): Promise<void> {
+  if (!planetView) {
+    const { PlanetView } = await import("./three/planet");
+    planetView = new PlanetView(planetCanvas);
   }
-
-  const updated = new Date(at);
-  liveStatus.textContent =
-    `${photos.length} immagini dall'archivio NASA · aggiornate ` +
-    `${Number.isNaN(updated.getTime()) ? "oggi" : dateFmt.format(updated)}`;
+  planetCanvas.hidden = !planetView.show(id);
 }
 
-async function refreshLivePhotos(force: boolean): Promise<void> {
-  const cached = cachedPhotos();
-  if (cached && !force) renderLivePhotos(cached.photos, cached.at);
-
-  const snapshot = await loadLivePhotos(force);
-  if (!snapshot) {
-    liveStatus.textContent = "Archivio NASA non raggiungibile: restano le immagini salvate nel sito.";
-    return;
-  }
-  renderLivePhotos(snapshot.photos, snapshot.at);
-}
-
-function openPhotoReader(photo: LivePhoto): void {
-  const body = document.createElement("div");
-  body.className = "reader-text";
-
-  const figure = document.createElement("figure");
-  figure.className = "reader-figure";
-  const image = document.createElement("img");
-  image.src = photo.full;
-  image.alt = photo.title;
-  figure.append(image);
-  body.append(figure);
-
-  if (photo.description) {
-    const text = document.createElement("p");
-    text.textContent = photo.description;
-    body.append(text);
-  }
-
-  body.append(
-    factsList([
-      { label: "Missione", value: photo.telescope },
-      { label: "Data", value: photo.date || "—" },
-      { label: "Archivio", value: `NASA images · ${photo.nasaId}` },
-    ]),
-  );
-
-  openReader(
-    "Banca dati NASA",
-    photo.title,
-    [photo.telescope, fmtDate(photo.date)].filter(Boolean).join(" · "),
-    body,
-    "Immagine prelevata dall'archivio NASA e mostrata qui: la lettura non lascia la pagina.",
-  );
-}
-
-/* ---------- scheda dettaglio ---------- */
-
-function showDetail(object: SkyObject): void {
-  const photo = photoById.get(object.id);
-  const solar =
-    object.kind === "planet" || object.kind === "moon" || object.kind === "sun" ? (object as SolarBody) : null;
-  const img = $<HTMLImageElement>("#detail-img");
-  const orb = $<HTMLDivElement>("#detail-orb");
-  const source = $<HTMLButtonElement>("#detail-source");
-  const badge = $<HTMLSpanElement>("#detail-badge");
+function showDetail(o: SkyObject): void {
+  const media = $<HTMLDivElement>("#detail-media");
+  const badge = $("#detail-badge");
   const facts = $<HTMLDListElement>("#detail-facts");
 
-  currentObject = object;
+  planetView?.hide();
+  planetCanvas.hidden = true;
+  media.hidden = false;
+  media.style.removeProperty("--orb-a");
+  media.style.removeProperty("--orb-b");
 
-  if (photo) {
-    img.src = photo.file;
-    img.alt = `${object.name} — immagine ${photo.telescope}`;
-    img.hidden = false;
-    orb.hidden = true;
-    orb.classList.remove("is-3d");
-    planetView.hide();
-    badge.textContent = `${photo.telescope} · ${photo.date.slice(0, 4)}`;
-  } else if (solar) {
-    img.removeAttribute("src");
-    img.hidden = true;
-    orb.hidden = false;
-    orb.style.setProperty("--orb-a", solar.tint[0]);
-    orb.style.setProperty("--orb-b", solar.tint[1]);
-    orb.classList.toggle("is-3d", planetView.show(solar.id));
-    badge.textContent = solar.observer
-      ? "Punto di osservazione"
-      : `Posizione di oggi · ${dateFmt.format(SOLAR_COMPUTED_AT)}`;
+  if (isSolar(o)) {
+    media.style.setProperty("--orb-a", o.tint[0]);
+    media.style.setProperty("--orb-b", o.tint[1]);
+    badge.textContent = `Posizione del ${dayFmt.format(SOLAR_COMPUTED_AT)}`;
+    void showPlanet(o.id);
   } else {
-    img.removeAttribute("src");
-    img.hidden = true;
-    orb.hidden = true;
-    orb.classList.remove("is-3d");
-    planetView.hide();
-    badge.textContent = "";
+    // per il cielo profondo l'immagine reale è già la mappa, inquadrata sull'oggetto
+    media.hidden = true;
   }
 
   facts.textContent = "";
-  facts.hidden = !solar;
-  if (solar) {
-    for (const entry of solar.facts) {
-      const term = document.createElement("dt");
-      term.textContent = entry.label;
-      const value = document.createElement("dd");
-      value.textContent = entry.value;
-      facts.append(term, value);
-    }
+  facts.hidden = !isSolar(o);
+  if (isSolar(o)) {
+    for (const entry of o.facts) facts.append(el("dt", "", entry.label), el("dd", "", entry.value));
   }
 
-  source.textContent = "Scheda completa";
-  source.hidden = false;
-
-  const observer = (object as SolarBody).observer === true;
-  $<HTMLParagraphElement>("#detail-kind").textContent = observer
-    ? `${KIND_LABEL[object.kind]} · punto di osservazione`
-    : `${KIND_LABEL[object.kind]} · RA ${raLabel(object.ra)} · Dec ${decLabel(object.dec)}`;
-  $<HTMLHeadingElement>("#detail-name").textContent = object.name;
-  $<HTMLParagraphElement>("#detail-meta").textContent = observer
-    ? "sei qui · il cielo si guarda da questo pianeta"
-    : `${object.distance}${photo ? ` · immagine: ${photo.credit}` : ""}`;
-  $<HTMLParagraphElement>("#detail-desc").textContent = object.description;
+  $("#detail-kind").textContent = `${KIND_LABEL[o.kind]} · RA ${raLabel(o.ra)} · Dec ${decLabel(o.dec)}`;
+  $("#detail-name").textContent = o.name;
+  $("#detail-meta").textContent = o.distance;
+  $("#detail-desc").textContent = o.description;
   detail.hidden = false;
 }
 
 function hideDetail(): void {
   detail.hidden = true;
-  planetView.hide();
+  planetView?.hide();
 }
 
-/* ---------- stato e interazioni ---------- */
-
-function setTab(name: string): void {
-  tabs.forEach((tab) => {
-    const active = tab.dataset.tab === name;
-    tab.classList.toggle("is-active", active);
-    tab.setAttribute("aria-selected", String(active));
-  });
-  Object.entries(views).forEach(([key, view]) => view.classList.toggle("is-active", key === name));
-}
-
-function setActiveCard(id: string | null): void {
-  grid.querySelectorAll<HTMLElement>(".photo-card").forEach((card) => {
-    card.classList.toggle("is-active", card.dataset.id === id);
-  });
-}
-
-function selectObject(id: string, options: { scroll?: boolean } = {}): void {
-  const object = objectById.get(id);
-  if (!object) return;
-  sky.focus(id);
-  showDetail(object);
+function selectObject(id: string): void {
+  const o = objectById.get(id);
+  if (!o) return;
+  sky?.focus(id);
+  showDetail(o);
   closeSearch();
-
-  if (photoById.has(id)) {
-    setActiveCard(id);
-    setTab("photos");
-    if (options.scroll !== false) {
-      const card = grid.querySelector<HTMLElement>(`.photo-card[data-id="${id}"]`);
-      card?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
-  } else {
-    setActiveCard(null);
-  }
-}
-
-function hoverObject(id: string | null): void {
-  if (!id) return;
-  const object = objectById.get(id);
-  if (object) canvas.title = object.name;
-}
-
-/* ---------- lettore interno (notizie e schede) ---------- */
-
-const reader = $<HTMLElement>("#reader");
-const readerBody = $<HTMLDivElement>("#reader-body");
-let currentObject: SkyObject | null = null;
-let restoreFocus: HTMLElement | null = null;
-
-function factsList(entries: Array<{ label: string; value: string }>): HTMLDListElement {
-  const list = document.createElement("dl");
-  list.className = "facts";
-  for (const entry of entries) {
-    const term = document.createElement("dt");
-    term.textContent = entry.label;
-    const value = document.createElement("dd");
-    value.textContent = entry.value;
-    list.append(term, value);
-  }
-  return list;
-}
-
-function openReader(kicker: string, title: string, meta: string, body: HTMLElement, note: string): void {
-  $<HTMLParagraphElement>("#reader-kicker").textContent = kicker;
-  $<HTMLHeadingElement>("#reader-title").textContent = title;
-  $<HTMLParagraphElement>("#reader-meta").textContent = meta;
-  readerBody.textContent = "";
-  readerBody.append(body);
-  $<HTMLParagraphElement>("#reader-note").textContent = note;
-  restoreFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-  reader.hidden = false;
-  $<HTMLButtonElement>("#reader-close").focus();
-}
-
-function closeReader(): void {
-  if (reader.hidden) return;
-  reader.hidden = true;
-  restoreFocus?.focus();
-  restoreFocus = null;
-}
-
-function openNews(item: NewsItem): void {
-  const body = document.createElement("div");
-  body.className = "reader-text";
-
-  if (item.image) {
-    const figure = document.createElement("figure");
-    figure.className = "reader-figure";
-    const image = document.createElement("img");
-    image.src = item.image;
-    image.alt = item.title;
-    image.loading = "lazy";
-    figure.append(image);
-    body.append(figure);
-  }
-
-  const teaser = cleanTeaser(item.summary);
-  const paragraphs = item.content?.length ? item.content : teaser ? [teaser] : [];
-  for (const text of paragraphs) {
-    const paragraph = document.createElement("p");
-    paragraph.textContent = text;
-    body.append(paragraph);
-  }
-
-  const meta = [fmtDate(item.date), "NASA Science", ...item.categories.slice(0, 2)].join(" · ");
-  openReader(
-    "Notizia spaziale",
-    item.title,
-    meta,
-    body,
-    item.content?.length
-      ? `Articolo NASA Science salvato nel sito il ${fmtDate(feed.fetchedAt)}: la lettura non lascia la pagina.`
-      : "Anteprima dal feed NASA Science: il testo integrale non è disponibile nella copia locale.",
-  );
-}
-
-function openObjectReader(object: SkyObject): void {
-  const photo = photoById.get(object.id);
-  const solar =
-    object.kind === "planet" || object.kind === "moon" || object.kind === "sun" ? (object as SolarBody) : null;
-  const body = document.createElement("div");
-  body.className = "reader-text";
-
-  if (photo) {
-    const figure = document.createElement("figure");
-    figure.className = "reader-figure";
-    const image = document.createElement("img");
-    image.src = photo.file;
-    image.alt = `${object.name} — immagine ${photo.telescope}`;
-    const caption = document.createElement("figcaption");
-    caption.textContent = `${photo.telescope} · ${photo.credit}`;
-    figure.append(image, caption);
-    body.append(figure);
-  }
-
-  const description = document.createElement("p");
-  description.textContent = object.description;
-  body.append(description);
-
-  if (solar) body.append(factsList(solar.facts));
-
-  const extra: Array<{ label: string; value: string }> = [
-    { label: "Posizione di oggi", value: `RA ${raLabel(object.ra)} · Dec ${decLabel(object.dec)}` },
-    { label: "Distanza dalla Terra", value: object.distance },
-  ];
-
-  if (photo) {
-    extra.push(
-      { label: "Telescopio", value: photo.telescope },
-      { label: "Data", value: photo.date },
-      { label: "Credito", value: photo.credit },
-      { label: "Archivio", value: `NASA images · ${photo.nasaId}` },
-      { label: "Titolo originale", value: photo.nasaTitle },
-    );
-  }
-
-  body.append(factsList(extra));
-
-  openReader(
-    solar ? "Corpo del sistema solare" : "Oggetto del cielo profondo",
-    object.name,
-    `${KIND_LABEL[object.kind]} · ${object.distance}`,
-    body,
-    solar
-      ? "Scheda e dati calcolati nel sito: nessun collegamento esterno viene aperto."
-      : "Immagine e dati dall'archivio NASA, salvati nel sito: la lettura non lascia la pagina.",
-  );
+  setPanelOpen(false);
 }
 
 /* ---------- ricerca ---------- */
 
-let searchHits: SkyObject[] = [];
+const searchInput = $<HTMLInputElement>("#search-input");
+const searchResults = $<HTMLDivElement>("#search-results");
+type Hit = { object: SkyObject } | { query: string };
+let hits: Hit[] = [];
 let activeHit = -1;
 
 function setSearchOpen(open: boolean): void {
@@ -569,169 +208,274 @@ function highlightHit(index: number): void {
   (searchResults.children[index] as HTMLElement | undefined)?.scrollIntoView({ block: "nearest" });
 }
 
-function chooseObject(object: SkyObject): void {
-  searchInput.value = object.name;
-  selectObject(object.id, { scroll: true });
+async function chooseHit(hit: Hit): Promise<void> {
+  if ("object" in hit) {
+    searchInput.value = hit.object.name;
+    selectObject(hit.object.id);
+    return;
+  }
+  closeSearch();
+  hideDetail();
+  if (!sky) return;
+  searchInput.disabled = true;
+  const found = await sky.resolve(hit.query);
+  searchInput.disabled = false;
+  if (found) setPanelOpen(false);
+  else {
+    searchResults.textContent = "";
+    searchResults.append(el("p", "search-empty", `«${hit.query}» non trovato nei cataloghi astronomici.`));
+    setSearchOpen(true);
+  }
 }
 
-function renderSearch(query: string): void {
-  const trimmed = query.trim();
+function renderSearch(): void {
+  const query = searchInput.value.trim();
   searchResults.textContent = "";
-  searchHits = trimmed ? searchSky(searchIndex, trimmed, 6) : [];
   activeHit = -1;
-
-  if (!trimmed) {
+  if (!query) {
+    hits = [];
     closeSearch();
     return;
   }
 
-  if (!searchHits.length) {
-    const empty = document.createElement("p");
-    empty.className = "search-empty";
-    empty.textContent = `Nessun corpo celeste per «${trimmed}».`;
-    searchResults.append(empty);
-    setSearchOpen(true);
-    return;
-  }
+  hits = searchSky(searchIndex, query, 6).map((object) => ({ object }));
+  if (query.length >= 2) hits.push({ query });
 
-  searchHits.forEach((object, index) => {
-    const hit = document.createElement("button");
-    hit.type = "button";
-    hit.className = "search-hit";
-    hit.setAttribute("role", "option");
-    hit.dataset.id = object.id;
-
-    const name = document.createElement("span");
-    name.className = "search-hit-name";
-    name.textContent = object.name;
-
-    const kind = document.createElement("span");
-    kind.className = "search-hit-kind";
-    kind.textContent = KIND_LABEL[object.kind];
-
-    const meta = document.createElement("span");
-    meta.className = "search-hit-meta";
-    meta.textContent = object.distance;
-
-    hit.append(name, kind, meta);
-    hit.addEventListener("click", () => chooseObject(object));
-    hit.addEventListener("pointerenter", () => highlightHit(index));
-    searchResults.append(hit);
+  hits.forEach((hit, index) => {
+    const row = el("button", "search-hit");
+    row.type = "button";
+    row.setAttribute("role", "option");
+    if ("object" in hit) {
+      const dot = el("span", "search-dot");
+      dot.style.background = KIND_COLOR[hit.object.kind];
+      row.append(dot, el("span", "search-hit-name", hit.object.name), el("span", "search-hit-kind", KIND_LABEL[hit.object.kind]));
+    } else {
+      row.classList.add("search-hit--remote");
+      row.append(el("span", "search-dot"), el("span", "search-hit-name", `Cerca «${hit.query}» in tutto il cielo`), el("span", "search-hit-kind", "Simbad"));
+    }
+    row.addEventListener("click", () => void chooseHit(hit));
+    row.addEventListener("pointerenter", () => highlightHit(index));
+    searchResults.append(row);
   });
-
   setSearchOpen(true);
 }
 
-searchInput.addEventListener("input", () => renderSearch(searchInput.value));
-searchInput.addEventListener("focus", () => {
-  if (searchInput.value.trim()) renderSearch(searchInput.value);
-});
+searchInput.addEventListener("input", renderSearch);
+searchInput.addEventListener("focus", () => searchInput.value.trim() && renderSearch());
 searchInput.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     event.preventDefault();
     searchInput.value = "";
     closeSearch();
     searchInput.blur();
-    return;
-  }
-  if (!searchHits.length) return;
-  if (event.key === "ArrowDown") {
+  } else if (hits.length && event.key === "ArrowDown") {
     event.preventDefault();
-    highlightHit((activeHit + 1) % searchHits.length);
-  } else if (event.key === "ArrowUp") {
+    highlightHit((activeHit + 1) % hits.length);
+  } else if (hits.length && event.key === "ArrowUp") {
     event.preventDefault();
-    highlightHit((activeHit - 1 + searchHits.length) % searchHits.length);
-  } else if (event.key === "Enter") {
+    highlightHit((activeHit - 1 + hits.length) % hits.length);
+  } else if (hits.length && event.key === "Enter") {
     event.preventDefault();
-    chooseObject(searchHits[activeHit >= 0 ? activeHit : 0]);
+    void chooseHit(hits[Math.max(activeHit, 0)]);
   }
 });
-
 document.addEventListener("pointerdown", (event) => {
   if (!(event.target as HTMLElement).closest(".search")) closeSearch();
 });
 
+/* ---------- notizie ---------- */
+
+const newsList = $<HTMLDivElement>("#news-list");
+
+function skeleton(container: HTMLElement, count: number, className: string): void {
+  container.textContent = "";
+  for (let i = 0; i < count; i++) container.append(el("div", `skeleton ${className}`));
+}
+
+function failure(container: HTMLElement, message: string, retry: () => void): void {
+  container.textContent = "";
+  const box = el("div", "feed-error");
+  const button = el("button", "pill-btn", "Riprova");
+  button.type = "button";
+  button.addEventListener("click", retry);
+  box.append(el("p", "", message), button);
+  container.append(box);
+}
+
+async function refreshNews(): Promise<void> {
+  skeleton(newsList, 6, "skeleton-news");
+  try {
+    const items = await loadNews();
+    newsList.textContent = "";
+    for (const item of items) newsList.append(newsCard(item));
+  } catch {
+    failure(newsList, "Le fonti delle notizie non rispondono in questo momento.", () => void refreshNews());
+  }
+}
+
+function newsCard(item: NewsItem): HTMLElement {
+  const card = el("button", "news-card");
+  card.type = "button";
+  if (item.image) {
+    const img = el("img", "news-img");
+    img.src = item.image;
+    img.alt = "";
+    img.loading = "lazy";
+    img.onerror = () => img.remove();
+    card.append(img);
+  }
+  const text = el("div", "news-text");
+  const meta = el("p", "news-meta");
+  meta.append(el("span", "news-source", item.source), el("span", "", ago(item.date)));
+  text.append(meta, el("h2", "news-title", item.title));
+  card.append(text);
+  card.addEventListener("click", () => openReader(item));
+  return card;
+}
+
+const reader = $<HTMLElement>("#reader");
+let readerReturn: HTMLElement | null = null;
+
+function openReader(item: NewsItem): void {
+  const img = $<HTMLImageElement>("#reader-img");
+  img.hidden = !item.image;
+  if (item.image) img.src = item.image;
+  $("#reader-kicker").textContent = `${item.source} · ${ago(item.date)}`;
+  $("#reader-title").textContent = item.title;
+  $("#reader-summary").textContent = item.summary;
+  const link = $<HTMLAnchorElement>("#reader-link");
+  link.href = item.url;
+  link.textContent = `Leggi l'articolo completo su ${item.source} ↗`;
+  readerReturn = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  reader.hidden = false;
+  $<HTMLButtonElement>("#reader-close").focus();
+}
+
+function closeReader(): void {
+  if (reader.hidden) return;
+  reader.hidden = true;
+  readerReturn?.focus();
+}
+
+/* ---------- foto dallo spazio ---------- */
+
+const viewer = new PhotoViewer((photo) => [photoDate(photo), photo.credit].filter(Boolean).join(" · "));
+
+const PHOTO_SOURCES: Record<string, { load: () => Promise<SpacePhoto[]>; skeletons: number; error: string }> = {
+  apod: { load: loadApod, skeletons: 1, error: "La foto astronomica del giorno non è raggiungibile in questo momento." },
+  epic: { load: loadEpic, skeletons: 4, error: "Le foto del satellite DSCOVR non sono raggiungibili." },
+  esa: { load: loadEsa, skeletons: 4, error: "I comunicati ESA di Webb e Hubble non sono raggiungibili." },
+  nasa: { load: loadNasaImages, skeletons: 6, error: "La libreria immagini NASA non risponde." },
+};
+
+function photoCard(photo: SpacePhoto, list: SpacePhoto[], index: number, hero: boolean): HTMLElement {
+  const card = el("button", hero && index === 0 ? "photo-card photo-card--hero" : "photo-card");
+  card.type = "button";
+  card.setAttribute("aria-label", photo.title);
+  const img = el("img");
+  img.src = photo.thumb;
+  img.alt = "";
+  img.loading = "lazy";
+  img.onerror = () => card.remove();
+  const caption = el("span", "photo-caption");
+  caption.append(el("span", "photo-title", photo.title), el("span", "photo-date", photo.video ? `${photoDate(photo)} · video` : photoDate(photo)));
+  card.append(img, caption);
+  card.addEventListener("click", () => viewer.open(list, index));
+  return card;
+}
+
+async function refreshPhotos(key: string): Promise<void> {
+  const source = PHOTO_SOURCES[key];
+  const section = $<HTMLElement>(`.photo-section[data-source="${key}"]`);
+  const feed = section.querySelector<HTMLElement>(".photo-feed")!;
+  const hero = feed.classList.contains("photo-feed--hero");
+  skeleton(feed, source.skeletons, hero ? "skeleton-hero" : "skeleton-photo");
+  try {
+    const photos = await source.load();
+    if (!photos.length) throw new Error("vuoto");
+    feed.textContent = "";
+    photos.forEach((photo, i) => feed.append(photoCard(photo, photos, i, hero)));
+  } catch {
+    failure(feed, source.error, () => void refreshPhotos(key));
+  }
+}
+
+let photosLoaded = false;
+function loadPhotosOnce(): void {
+  if (photosLoaded) return;
+  photosLoaded = true;
+  for (const key of Object.keys(PHOTO_SOURCES)) void refreshPhotos(key);
+}
+
+/* ---------- pannello e schede ---------- */
+
+const panel = $<HTMLElement>("#panel");
+const handle = $<HTMLButtonElement>("#panel-handle");
+
+function setPanelOpen(open: boolean): void {
+  panel.classList.toggle("is-open", open);
+  handle.setAttribute("aria-expanded", String(open));
+}
+
+function setTab(name: string): void {
+  document.querySelectorAll<HTMLButtonElement>(".tab").forEach((tab) => {
+    const active = tab.dataset.tab === name;
+    tab.classList.toggle("is-active", active);
+    tab.setAttribute("aria-selected", String(active));
+  });
+  document.querySelectorAll<HTMLElement>(".view").forEach((view) => {
+    const active = view.id === `view-${name}`;
+    view.classList.toggle("is-active", active);
+    view.hidden = !active;
+  });
+  if (name === "photos") loadPhotosOnce();
+}
+
+document.querySelectorAll<HTMLButtonElement>(".tab").forEach((tab) =>
+  tab.addEventListener("click", () => setTab(tab.dataset.tab ?? "news")),
+);
+handle.addEventListener("click", () => setPanelOpen(!panel.classList.contains("is-open")));
+
+/* ---------- comandi ---------- */
+
+$("#zoom-in").addEventListener("click", () => sky?.zoomIn());
+$("#zoom-out").addEventListener("click", () => sky?.zoomOut());
+const constellationBtn = $<HTMLButtonElement>("#toggle-constellations");
+constellationBtn.addEventListener("click", () => {
+  const on = constellationBtn.getAttribute("aria-pressed") !== "true";
+  constellationBtn.setAttribute("aria-pressed", String(on));
+  constellationBtn.classList.toggle("is-on", on);
+  sky?.setConstellations(on);
+});
+$("#reset").addEventListener("click", () => {
+  hideDetail();
+  sky?.reset();
+});
+$("#detail-close").addEventListener("click", hideDetail);
+$("#reader-close").addEventListener("click", closeReader);
+$("#reader-scrim").addEventListener("click", closeReader);
+
 window.addEventListener("keydown", (event) => {
   const target = event.target as HTMLElement | null;
-  const typing = !!target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA");
-  const shortcut = event.key === "/" || ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k");
-  if (typing || !shortcut) return;
-  event.preventDefault();
-  searchInput.focus();
-  searchInput.select();
+  const typing = !!target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT");
+  if (event.key === "Escape") {
+    if (!reader.hidden) closeReader();
+    else if (!detail.hidden) hideDetail();
+    return;
+  }
+  if (typing || viewer.isOpen) return;
+  if (event.key === "/" || ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k")) {
+    event.preventDefault();
+    setPanelOpen(true);
+    searchInput.focus();
+    searchInput.select();
+  }
 });
 
-const sky = new SkyView(
-  canvas,
-  labelLayer,
-  ALL_OBJECTS.filter((object) => !(object as SolarBody).observer).map<SkyTarget>((object) => ({
-    id: object.id,
-    name: object.name,
-    kind: object.kind,
-    ra: object.ra,
-    dec: object.dec,
-    image: photoById.get(object.id)?.file,
-  })),
-  {
-    onSelect: (id) => selectObject(id, { scroll: true }),
-    onHover: (id) => hoverObject(id),
-  },
-);
+/* ---------- avvio ---------- */
 
-renderNews();
-renderGallery();
 renderChips();
-void refreshLivePhotos(false);
-void loadLiveNews().then((items) => {
-  if (!items || !items.length) return;
-  feed.items = items.map((item) => ({ ...item, content: [] }));
-  renderNews();
-  $<HTMLSpanElement>("#source-note").textContent =
-    `Notizie: ${feed.source}, lette dal feed oggi. Foto: archivio NASA e banca dati live. ` +
-    `Pianeti: posizioni calcolate per oggi. Mappa: stelle reali, 89 costellazioni e catalogo Messier.`;
-});
-
-tabs.forEach((tab) => tab.addEventListener("click", () => setTab(tab.dataset.tab ?? "news")));
-$<HTMLButtonElement>("#zoom-in").addEventListener("click", () => sky.zoom(-8));
-$<HTMLButtonElement>("#zoom-out").addEventListener("click", () => sky.zoom(8));
-const constellationToggle = $<HTMLButtonElement>("#toggle-constellations");
-constellationToggle.addEventListener("click", () => {
-  const next = constellationToggle.getAttribute("aria-pressed") !== "true";
-  constellationToggle.setAttribute("aria-pressed", String(next));
-  constellationToggle.classList.toggle("is-on", next);
-  sky.setConstellations(next);
-});
-$<HTMLButtonElement>("#refresh-photos").addEventListener("click", () => {
-  void refreshLivePhotos(true);
-});
-$<HTMLButtonElement>("#reset").addEventListener("click", () => {
-  sky.clearFocus();
-  setActiveCard(null);
-  hideDetail();
-  searchInput.value = "";
-  closeSearch();
-});
-$<HTMLButtonElement>("#detail-close").addEventListener("click", hideDetail);
-$<HTMLButtonElement>("#detail-source").addEventListener("click", () => {
-  if (currentObject) openObjectReader(currentObject);
-});
-$<HTMLButtonElement>("#reader-close").addEventListener("click", closeReader);
-$<HTMLElement>("#reader-scrim").addEventListener("click", closeReader);
-window.addEventListener(
-  "keydown",
-  (event) => {
-    if (event.key === "Escape" && !reader.hidden) {
-      event.preventDefault();
-      event.stopPropagation();
-      closeReader();
-    }
-  },
-  true,
-);
-
-window.setInterval(() => {
-  const { ra, dec } = sky.getViewCenter();
-  hudCoords.textContent = `RA ${raLabel(ra)} · Dec ${decLabel(dec)}`;
-}, 220);
-
-// la vista parte da Orione ma senza scheda aperta
+void startSky();
+void refreshNews();
+// le foto si caricano quando si apre la scheda, oppure poco dopo l'avvio
+window.setTimeout(loadPhotosOnce, 2500);
