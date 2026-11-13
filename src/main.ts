@@ -1,10 +1,16 @@
 import "./style.css";
 import { KIND_LABEL, OBJECTS, type Kind, type SkyObject } from "./data/objects";
 import { SOLAR_BODIES, SOLAR_COMPUTED_AT, type SolarBody } from "./data/solar";
+import { MINOR_BODIES, PROBES, moonBodies } from "./data/bodies";
+import { COSMIC_OBJECTS } from "./data/galaxies";
+import { NAMED_STARS } from "./data/stars";
+import { REGIONS } from "./data/regions";
 import deepskyJson from "./data/deepsky.json";
+import textureCredits from "./data/texture-credits.json";
 import { buildIndex, searchSky } from "./search";
 import { KIND_COLOR } from "./sky/colors";
 import type { Constellation, SkyMap, SkyMarker, SurveyId } from "./sky/aladin";
+import type { UniverseInfo, UniverseView } from "./universe/scene";
 import { loadNews, type NewsItem } from "./feeds/news";
 import { loadApod, loadEpic, loadEsa, loadNasaImages, type SpacePhoto } from "./feeds/photos";
 import { PhotoViewer } from "./ui/viewer";
@@ -12,18 +18,32 @@ import { PhotoViewer } from "./ui/viewer";
 /* ---------- catalogo ---------- */
 
 const solarBodies = SOLAR_BODIES.filter((body) => !body.observer);
+const earth = SOLAR_BODIES.find((body) => body.observer);
 const famous = OBJECTS;
 /** Il catalogo Messier ripete alcuni oggetti celebri: si tiene la scheda più ricca. */
 const messier = (deepskyJson as { objects: SkyObject[] }).objects.filter(
   (m) => !famous.some((f) => Math.abs(f.ra - m.ra) * 15 * Math.cos((f.dec * Math.PI) / 180) < 0.2 && Math.abs(f.dec - m.dec) < 0.2),
 );
+const moons = moonBodies(new Map([...solarBodies, ...MINOR_BODIES].map((b) => [b.id, b])));
 const deepObjects: SkyObject[] = [...famous, ...messier];
-const allObjects: SkyObject[] = [...solarBodies, ...deepObjects];
+const allObjects: SkyObject[] = [
+  ...solarBodies,
+  ...(earth ? [earth] : []),
+  ...MINOR_BODIES,
+  ...moons,
+  ...PROBES,
+  ...NAMED_STARS,
+  ...deepObjects,
+  ...COSMIC_OBJECTS,
+  ...REGIONS,
+];
 const objectById = new Map(allObjects.map((o) => [o.id, o]));
 const searchIndex = buildIndex(allObjects);
 
 const toMarker = (o: SkyObject): SkyMarker => ({ id: o.id, name: o.name, kind: o.kind, ra: o.ra, dec: o.dec });
 const deepMarkers = { famous: famous.map(toMarker), messier: messier.map(toMarker) };
+/** Sul cielo: Sole, Luna, pianeti, pianeti nani, comete e sonde. */
+const skySolarMarkers = [...solarBodies, ...MINOR_BODIES, ...PROBES].map(toMarker);
 
 /* ---------- utilità ---------- */
 
@@ -35,7 +55,8 @@ const el = <K extends keyof HTMLElementTagNameMap>(tag: K, className = "", text 
   return node;
 };
 
-const isSolar = (o: SkyObject): o is SolarBody => o.kind === "planet" || o.kind === "moon" || o.kind === "sun";
+const isSolar = (o: SkyObject): o is SolarBody => (o.kind === "planet" || o.kind === "moon" || o.kind === "sun") && "tint" in o;
+type WithExtras = SkyObject & { facts?: Array<{ label: string; value: string }>; link?: string; color?: string };
 
 const dayFmt = new Intl.DateTimeFormat("it-IT", { day: "numeric", month: "short" });
 const longDayFmt = new Intl.DateTimeFormat("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -80,8 +101,9 @@ async function startSky(): Promise<void> {
   try {
     const [{ SkyMap }, skyData] = await Promise.all([import("./sky/aladin"), import("./data/sky.json")]);
     const constellations = (skyData.default as unknown as { constellations: Constellation[] }).constellations;
-    sky = await SkyMap.create($("#sky"), solarBodies.map(toMarker), deepMarkers, constellations);
+    sky = await SkyMap.create($("#sky"), skySolarMarkers, deepMarkers, constellations, NAMED_STARS.filter((star) => star.mag <= 2.6).map(toMarker));
     sky.onSelect = (id) => selectObject(id);
+    sky.onZoomLimit = () => showLaunch();
     sky.onMove = ({ ra, dec, fov }) => {
       $("#hud-coords").textContent = `RA ${raLabel(ra)} · Dec ${decLabel(dec)}`;
       $("#hud-fov").textContent = fovLabel(fov);
@@ -126,62 +148,208 @@ function renderChips(): void {
 
 const detail = $<HTMLElement>("#detail");
 const planetCanvas = $<HTMLCanvasElement>("#detail-planet");
-let planetView: { show(id: string): boolean; hide(): void } | null = null;
+let planetView: { show(id: string, color?: string): boolean; hide(): void } | null = null;
+let detailId: string | null = null;
 
-async function showPlanet(id: string): Promise<void> {
-  if (!planetView) {
-    const { PlanetView } = await import("./three/planet");
-    planetView = new PlanetView(planetCanvas);
-  }
-  planetCanvas.hidden = !planetView.show(id);
+/** Corpi con una superficie 3D disegnata nella scheda. */
+const GLOBE_KINDS = new Set<Kind>(["planet", "moon", "sun", "dwarf", "asteroid"]);
+
+const CREDITS = textureCredits as Record<string, { credit: string }>;
+
+async function showPlanet(id: string, color: string): Promise<void> {
+  const { PlanetView } = await import("./three/planet");
+  planetView ??= new PlanetView(planetCanvas);
+  if (detailId === id) planetCanvas.hidden = !planetView.show(id, color);
 }
 
 function showDetail(o: SkyObject): void {
+  const extra = o as WithExtras;
   const media = $<HTMLDivElement>("#detail-media");
   const badge = $("#detail-badge");
   const facts = $<HTMLDListElement>("#detail-facts");
+  detailId = o.id;
 
   planetView?.hide();
   planetCanvas.hidden = true;
-  media.hidden = false;
+  media.hidden = !GLOBE_KINDS.has(o.kind);
   media.style.removeProperty("--orb-a");
   media.style.removeProperty("--orb-b");
 
-  if (isSolar(o)) {
-    media.style.setProperty("--orb-a", o.tint[0]);
-    media.style.setProperty("--orb-b", o.tint[1]);
+  if (GLOBE_KINDS.has(o.kind)) {
+    const tint = isSolar(o) ? o.tint : [extra.color ?? "#cccccc", "#222222"];
+    media.style.setProperty("--orb-a", tint[0]);
+    media.style.setProperty("--orb-b", tint[1]);
     badge.textContent = `Posizione del ${dayFmt.format(SOLAR_COMPUTED_AT)}`;
-    void showPlanet(o.id);
-  } else {
-    // per il cielo profondo l'immagine reale è già la mappa, inquadrata sull'oggetto
-    media.hidden = true;
+    const credit = CREDITS[o.id]?.credit;
+    $("#detail-credit").textContent = credit
+      ? `Mappa: ${credit}`
+      : "Mai fotografato da vicino: nessuna mappa della superficie, solo il colore medio osservato.";
+    void showPlanet(o.id, tint[0]);
   }
 
   facts.textContent = "";
-  facts.hidden = !isSolar(o);
-  if (isSolar(o)) {
-    for (const entry of o.facts) facts.append(el("dt", "", entry.label), el("dd", "", entry.value));
-  }
+  facts.hidden = !extra.facts?.length;
+  for (const entry of extra.facts ?? []) facts.append(el("dt", "", entry.label), el("dd", "", entry.value));
 
-  $("#detail-kind").textContent = `${KIND_LABEL[o.kind]} · RA ${raLabel(o.ra)} · Dec ${decLabel(o.dec)}`;
+  const observer = o.id === "earth";
+  const region = o.kind === "structure" && REGIONS.some((r) => r.id === o.id);
+  $("#detail-kind").textContent =
+    observer || region ? KIND_LABEL[o.kind] : `${KIND_LABEL[o.kind]} · RA ${raLabel(o.ra)} · Dec ${decLabel(o.dec)}`;
   $("#detail-name").textContent = o.name;
   $("#detail-meta").textContent = o.distance;
   $("#detail-desc").textContent = o.description;
+
+  const link = $<HTMLAnchorElement>("#detail-link");
+  link.hidden = !extra.link;
+  if (extra.link) {
+    link.href = extra.link;
+    link.textContent = extra.link.includes("esa.int") ? "Scheda ESA ↗" : "Scheda NASA ↗";
+  }
+  $("#detail-to-universe").hidden = mode === "universe" || !universeKnows(o.id);
+  $("#detail-to-sky").hidden = mode === "sky" || observer || region;
   detail.hidden = false;
 }
 
 function hideDetail(): void {
   detail.hidden = true;
+  detailId = null;
   planetView?.hide();
 }
 
 function selectObject(id: string): void {
   const o = objectById.get(id);
   if (!o) return;
-  sky?.focus(id);
+  if (mode === "sky" && id === "earth") {
+    // la Terra non ha una direzione nel cielo: la si guarda dallo spazio
+    void setMode("universe").then(() => universe?.focus(id));
+  } else if (mode === "universe" && universe) {
+    if (!universe.focus(id)) {
+      // non è nello spazio 3D (per esempio un oggetto Messier senza distanza): si guarda dalla Terra
+      void setMode("sky").then(() => sky?.focus(id, o));
+    }
+  } else {
+    sky?.focus(id, o);
+  }
   showDetail(o);
   closeSearch();
   setPanelOpen(false);
+}
+
+/* ---------- Universo 3D ---------- */
+
+type Mode = "sky" | "universe";
+let mode: Mode = "sky";
+let universe: UniverseView | null = null;
+let universeLoading: Promise<UniverseView | null> | null = null;
+/** Oggetti che compaiono anche nello spazio 3D (tutti tranne il catalogo Messier). */
+const messierIds = new Set(messier.map((m) => m.id));
+const universeKnows = (id: string) => objectById.has(id) && !messierIds.has(id) && id !== "hudf";
+
+const LEVEL_CHIPS: Array<{ id: string; label: string }> = [
+  { id: "planets", label: "Pianeti" },
+  { id: "solar", label: "Sistema solare" },
+  { id: "oort", label: "Nube di Oort" },
+  { id: "stars", label: "Stelle vicine" },
+  { id: "galaxy", label: "Via Lattea" },
+  { id: "local", label: "Gruppo Locale" },
+  { id: "cosmic", label: "Superammassi" },
+  { id: "universe", label: "Universo osservabile" },
+];
+
+function renderScaleChips(): void {
+  const chips = $("#scale-chips");
+  for (const level of LEVEL_CHIPS) {
+    const chip = el("button", "chip", level.label);
+    chip.type = "button";
+    chip.dataset.scale = level.id;
+    chip.setAttribute("aria-pressed", "false");
+    chip.addEventListener("click", () => {
+      hideDetail();
+      universe?.goToScale(level.id);
+    });
+    chips.append(chip);
+  }
+}
+
+function showUniverseInfo(info: UniverseInfo): void {
+  $("#u-scale").textContent = info.scaleLabel;
+  $("#u-scale-bar").style.width = `${Math.max(12, Math.min(160, info.scalePx))}px`;
+  $("#u-level").textContent = info.level;
+  $("#u-from-sun").textContent = info.fromSun;
+  document.querySelectorAll<HTMLButtonElement>("#scale-chips .chip").forEach((chip) => {
+    chip.setAttribute("aria-pressed", String(chip.dataset.scale === info.scaleId));
+  });
+}
+
+async function loadUniverse(): Promise<UniverseView | null> {
+  universeLoading ??= (async () => {
+    loading.hidden = false;
+    loading.classList.remove("is-error");
+    $("#sky-loading-text").textContent = "Costruisco l'universo: 9.500 stelle, la Via Lattea, le galassie…";
+    try {
+      const { UniverseView } = await import("./universe/scene");
+      const host = $<HTMLDivElement>("#universe");
+      host.hidden = false;
+      const view = new UniverseView(host);
+      view.onSelect = (id) => {
+        const o = objectById.get(id);
+        if (o) showDetail(o);
+      };
+      view.onView = showUniverseInfo;
+      view.focus("sun", true);
+      view.goToScale("solar");
+      universe = view;
+      loading.hidden = true;
+      return view;
+    } catch (error) {
+      console.error(error);
+      $("#sky-loading-text").textContent = "L'Universo 3D non si è avviato: serve un browser con WebGL.";
+      loading.classList.add("is-error");
+      universeLoading = null;
+      return null;
+    }
+  })();
+  return universeLoading;
+}
+
+async function setMode(next: Mode): Promise<void> {
+  if (next === mode && (next === "sky" || universe)) return;
+  mode = next;
+  document.body.dataset.mode = next;
+  document.querySelectorAll<HTMLButtonElement>(".mode-btn").forEach((btn) => {
+    const active = btn.dataset.mode === next;
+    btn.classList.toggle("is-active", active);
+    btn.setAttribute("aria-selected", String(active));
+  });
+  hideLaunch();
+  history.replaceState(null, "", next === "universe" ? "#universo" : location.pathname + location.search);
+  const host = $<HTMLDivElement>("#universe");
+  if (next === "universe") {
+    const view = await loadUniverse();
+    if (!view || mode !== "universe") return;
+    host.hidden = false;
+    view.show();
+  } else {
+    universe?.hide();
+    host.hidden = true;
+    if (!sky && !loading.classList.contains("is-error")) $("#sky-loading-text").textContent = "Carico il cielo…";
+    loading.hidden = !!sky;
+  }
+  if (detailId) {
+    const o = objectById.get(detailId);
+    if (o) showDetail(o);
+  }
+}
+
+let launchTimer = 0;
+function showLaunch(): void {
+  const btn = $<HTMLButtonElement>("#to-universe");
+  btn.hidden = false;
+  window.clearTimeout(launchTimer);
+  launchTimer = window.setTimeout(hideLaunch, 7000);
+}
+function hideLaunch(): void {
+  $<HTMLButtonElement>("#to-universe").hidden = true;
 }
 
 /* ---------- ricerca ---------- */
@@ -216,6 +384,7 @@ async function chooseHit(hit: Hit): Promise<void> {
   }
   closeSearch();
   hideDetail();
+  if (mode === "universe") await setMode("sky");
   if (!sky) return;
   searchInput.disabled = true;
   const found = await sky.resolve(hit.query);
@@ -412,9 +581,15 @@ function loadPhotosOnce(): void {
 const panel = $<HTMLElement>("#panel");
 const handle = $<HTMLButtonElement>("#panel-handle");
 
+const newsToggle = $<HTMLButtonElement>("#news-toggle");
+const panelScrim = $<HTMLDivElement>("#panel-scrim");
+
 function setPanelOpen(open: boolean): void {
   panel.classList.toggle("is-open", open);
   handle.setAttribute("aria-expanded", String(open));
+  newsToggle.setAttribute("aria-expanded", String(open));
+  panelScrim.hidden = !open;
+  if (open && document.querySelector(".tab.is-active")?.getAttribute("data-tab") === "photos") loadPhotosOnce();
 }
 
 function setTab(name: string): void {
@@ -435,11 +610,30 @@ document.querySelectorAll<HTMLButtonElement>(".tab").forEach((tab) =>
   tab.addEventListener("click", () => setTab(tab.dataset.tab ?? "news")),
 );
 handle.addEventListener("click", () => setPanelOpen(!panel.classList.contains("is-open")));
+newsToggle.addEventListener("click", () => setPanelOpen(!panel.classList.contains("is-open")));
+$("#panel-close").addEventListener("click", () => setPanelOpen(false));
+panelScrim.addEventListener("click", () => setPanelOpen(false));
 
 /* ---------- comandi ---------- */
 
-$("#zoom-in").addEventListener("click", () => sky?.zoomIn());
-$("#zoom-out").addEventListener("click", () => sky?.zoomOut());
+$("#zoom-in").addEventListener("click", () => (mode === "universe" ? universe?.zoomIn() : sky?.zoomIn()));
+$("#zoom-out").addEventListener("click", () => (mode === "universe" ? universe?.zoomOut() : sky?.zoomOut()));
+document.querySelectorAll<HTMLButtonElement>(".mode-btn").forEach((btn) =>
+  btn.addEventListener("click", () => void setMode(btn.dataset.mode as Mode)),
+);
+$("#to-universe").addEventListener("click", () => void setMode("universe"));
+$("#detail-to-universe").addEventListener("click", () => {
+  const id = detailId;
+  void setMode("universe").then(() => {
+    if (id) universe?.focus(id);
+  });
+});
+$("#detail-to-sky").addEventListener("click", () => {
+  const o = detailId ? objectById.get(detailId) : undefined;
+  void setMode("sky").then(() => {
+    if (o) sky?.focus(o.id, o);
+  });
+});
 const constellationBtn = $<HTMLButtonElement>("#toggle-constellations");
 constellationBtn.addEventListener("click", () => {
   const on = constellationBtn.getAttribute("aria-pressed") !== "true";
@@ -449,7 +643,8 @@ constellationBtn.addEventListener("click", () => {
 });
 $("#reset").addEventListener("click", () => {
   hideDetail();
-  sky?.reset();
+  if (mode === "universe") universe?.goToScale("solar");
+  else sky?.reset();
 });
 $("#detail-close").addEventListener("click", hideDetail);
 $("#reader-close").addEventListener("click", closeReader);
@@ -460,13 +655,13 @@ window.addEventListener("keydown", (event) => {
   const typing = !!target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT");
   if (event.key === "Escape") {
     if (!reader.hidden) closeReader();
+    else if (panel.classList.contains("is-open")) setPanelOpen(false);
     else if (!detail.hidden) hideDetail();
     return;
   }
   if (typing || viewer.isOpen) return;
   if (event.key === "/" || ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k")) {
     event.preventDefault();
-    setPanelOpen(true);
     searchInput.focus();
     searchInput.select();
   }
@@ -475,7 +670,15 @@ window.addEventListener("keydown", (event) => {
 /* ---------- avvio ---------- */
 
 renderChips();
+renderScaleChips();
 void startSky();
+// link diretto all'Universo 3D, anche a una scala precisa: #universo, #universo/galaxy…
+if (location.hash.startsWith("#universo")) {
+  const scale = location.hash.split("/")[1];
+  void setMode("universe").then(() => {
+    if (scale) universe?.goToScale(scale);
+  });
+}
 void refreshNews();
 // le foto si caricano quando si apre la scheda, oppure poco dopo l'avvio
 window.setTimeout(loadPhotosOnce, 2500);

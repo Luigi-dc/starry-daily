@@ -4,3 +4,4 @@ artifacts/
 .DS_Store
 *.log
 /freebuff-sites-build/
+.texture-cache/

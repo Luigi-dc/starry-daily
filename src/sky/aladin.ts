@@ -89,9 +89,28 @@ const FOCUS_FOV: Record<string, number> = {
   sun: 4,
   moon: 2.5,
 };
-const KIND_FOV: Partial<Record<Kind, number>> = { planet: 1, galaxy: 0.6, cluster: 1, nebula: 1, remnant: 0.5 };
+const KIND_FOV: Partial<Record<Kind, number>> = {
+  planet: 1,
+  dwarf: 0.3,
+  asteroid: 0.3,
+  comet: 0.3,
+  probe: 2,
+  star: 1.5,
+  galaxy: 0.6,
+  cluster: 1,
+  nebula: 1,
+  remnant: 0.5,
+};
 
-const START = { ra: 83.82, dec: -5.39, fov: 70 };
+/**
+ * Proiezione stereografica: come nei planetari, il cielo riempie sempre tutto lo schermo
+ * (con la proiezione ortografica, allontanandosi, diventava un globo su sfondo nero).
+ */
+const PROJECTION = "STG";
+/** Campo massimo sul lato più lungo dello schermo: oltre, la stereografica deforma troppo i bordi. */
+export const MAX_FOV = 150;
+const MIN_FOV = 1 / 3600;
+const START = { ra: 83.82, dec: -5.39, fov: 100 };
 /** Sotto questo campo il cielo intero (Mellinger) diventa sgranato: si passa a DSS2. */
 const AUTO_DEEP_BELOW = 22;
 const AUTO_WIDE_ABOVE = 30;
@@ -103,17 +122,31 @@ function dotShape(color: string, size: number, ring: boolean): HTMLCanvasElement
   const ctx = canvas.getContext("2d")!;
   ctx.scale(ratio, ratio);
   const c = size / 2;
-  ctx.lineWidth = 1.25;
-  ctx.strokeStyle = color;
-  ctx.fillStyle = color;
-  ctx.beginPath();
   if (ring) {
+    // anello sottile con un alone morbido all'interno
+    const glow = ctx.createRadialGradient(c, c, 0, c, c, c - 1.5);
+    glow.addColorStop(0, "rgba(255,255,255,0)");
+    glow.addColorStop(0.7, "rgba(255,255,255,0)");
+    glow.addColorStop(1, `${color}55`);
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(c, c, c - 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = color;
+    ctx.beginPath();
     ctx.arc(c, c, c - 2, 0, Math.PI * 2);
     ctx.stroke();
   } else {
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 6;
-    ctx.arc(c, c, c / 2.4, 0, Math.PI * 2);
+    // disco luminoso con nucleo bianco, come un pianeta visto al telescopio
+    const glow = ctx.createRadialGradient(c, c, 0, c, c, c);
+    glow.addColorStop(0, "#ffffff");
+    glow.addColorStop(0.22, color);
+    glow.addColorStop(0.45, `${color}66`);
+    glow.addColorStop(1, `${color}00`);
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(c, c, c, 0, Math.PI * 2);
     ctx.fill();
   }
   return canvas;
@@ -133,6 +166,7 @@ export class SkyMap {
   private famousMarkers: SkyMarker[] = [];
   private messierMarkers: SkyMarker[] = [];
   private constellationNames!: AladinCatalog;
+  private starNames!: AladinCatalog;
   private constellationLines!: AladinOverlay;
   private survey: SurveyId = "auto";
   private activeLayer = "";
@@ -143,6 +177,8 @@ export class SkyMap {
 
   onSelect: (id: string) => void = () => {};
   onMove: (view: { ra: number; dec: number; fov: number }) => void = () => {};
+  /** L'utente continua ad allontanarsi pur essendo già al campo massimo. */
+  onZoomLimit: () => void = () => {};
 
   private constructor(private readonly host: HTMLElement) {}
 
@@ -151,12 +187,13 @@ export class SkyMap {
     solar: SkyMarker[],
     deepsky: { famous: SkyMarker[]; messier: SkyMarker[] },
     constellations: Constellation[],
+    stars: SkyMarker[],
   ): Promise<SkyMap> {
     const [, surveys] = await Promise.all([A.init, resolveSurveys()]);
     if (!surveys.size) throw new Error("Nessun server di immagini del cielo raggiungibile");
     const map = new SkyMap(host);
     map.surveys = surveys;
-    map.build(solar, deepsky, constellations);
+    map.build(solar, deepsky, constellations, stars);
     return map;
   }
 
@@ -164,13 +201,14 @@ export class SkyMap {
     solar: SkyMarker[],
     deepsky: { famous: SkyMarker[]; messier: SkyMarker[] },
     constellations: Constellation[],
+    stars: SkyMarker[],
   ): void {
-    const first = this.layerFor(START.fov);
+    const first = this.layerFor(Math.min(START.fov, this.maxFov()));
     this.aladin = A.aladin(this.host, {
       survey: first,
       target: `${START.ra} ${START.dec}`,
-      fov: START.fov,
-      projection: "SIN",
+      fov: Math.min(START.fov, this.maxFov()),
+      projection: PROJECTION,
       cooFrame: "ICRSd",
       backgroundColor: "rgb(3, 4, 10)",
       showReticle: false,
@@ -192,9 +230,11 @@ export class SkyMap {
       samp: false,
     });
     this.activeLayer = first;
+    this.aladin.setFoVRange(MIN_FOV, this.maxFov());
+    window.addEventListener("resize", () => this.aladin.setFoVRange(MIN_FOV, this.maxFov()));
 
     // costellazioni: linee tenui e nomi senza simbolo
-    this.constellationLines = A.graphicOverlay({ name: "Costellazioni", color: "rgba(140, 180, 255, 0.35)", lineWidth: 1 });
+    this.constellationLines = A.graphicOverlay({ name: "Costellazioni", color: "rgba(150, 190, 255, 0.42)", lineWidth: 1.2 });
     this.aladin.addOverlay(this.constellationLines);
     for (const c of constellations) {
       for (const line of c.lines) {
@@ -208,23 +248,38 @@ export class SkyMap {
       sourceSize: 8,
       displayLabel: true,
       labelColumn: "name",
-      labelColor: "rgba(170, 200, 255, 0.55)",
-      labelFont: "italic 12px system-ui, sans-serif",
+      labelColor: "rgba(175, 205, 255, 0.62)",
+      labelFont: "italic 500 12px Inter, system-ui, sans-serif",
       onClick: () => {},
     });
     this.aladin.addCatalog(this.constellationNames);
     this.constellationNames.addSources(constellations.map((c) => A.source(c.ra * 15, c.dec, { name: c.name.toUpperCase() })));
 
+    // nomi delle stelle più note, appena sopra la stella
+    this.starNames = A.catalog({
+      name: "Stelle",
+      color: "#fff1d6",
+      sourceSize: 10,
+      shape: dotShape("#fff1d6", 10, true),
+      displayLabel: true,
+      labelColumn: "name",
+      labelColor: "rgba(255, 241, 214, 0.78)",
+      labelFont: "500 11.5px Inter, system-ui, sans-serif",
+      onClick: () => {},
+    });
+    this.aladin.addCatalog(this.starNames);
+    this.addMarkers(this.starNames, stars);
+
     // cielo profondo: anello colorato secondo il tipo. Il catalogo Messier compare solo da vicino.
     this.famousMarkers = deepsky.famous;
     this.messierMarkers = deepsky.messier;
-    this.messier = this.markerCatalog("Messier", "#c8d4ff", 10, true, "11px system-ui, sans-serif");
+    this.messier = this.markerCatalog("Messier", "#c8d4ff", 10, true, "11px Inter, system-ui, sans-serif");
     this.addMarkers(this.messier, deepsky.messier);
-    this.famous = this.markerCatalog("Oggetti celebri", "#c8d4ff", 12, true, "500 12px system-ui, sans-serif");
+    this.famous = this.markerCatalog("Oggetti celebri", "#c8d4ff", 14, true, "600 12.5px Inter, system-ui, sans-serif");
     this.addMarkers(this.famous, deepsky.famous);
 
     // Sole, Luna e pianeti: sempre visibili, sopra tutto
-    this.solar = this.markerCatalog("Sistema solare", "#ffd27a", 16, false, "600 13px system-ui, sans-serif");
+    this.solar = this.markerCatalog("Sistema solare", "#ffd27a", 18, false, "600 13px Inter, system-ui, sans-serif");
     this.addMarkers(this.solar, solar);
 
     this.aladin.on("objectClicked", (object: { data?: { id?: string } } | null) => {
@@ -236,6 +291,22 @@ export class SkyMap {
       this.updateLayers();
       this.emitMove();
     });
+    // al campo massimo, altri giri di rotella verso l'esterno portano nell'Universo 3D
+    let pushes = 0;
+    this.host.addEventListener(
+      "wheel",
+      (event) => {
+        if (event.deltaY <= 0 || !this.isAtWidest()) {
+          pushes = 0;
+          return;
+        }
+        if (++pushes >= 3) {
+          pushes = 0;
+          this.onZoomLimit();
+        }
+      },
+      { passive: true },
+    );
     this.updateLayers();
     this.emitMove();
   }
@@ -294,6 +365,8 @@ export class SkyMap {
 
     const messier = fov < 35 || this.filter !== null;
     if (messier !== this.messier.isShowing) messier ? this.messier.show() : this.messier.hide();
+    const stars = fov < 120 && this.filter === null;
+    if (stars !== this.starNames.isShowing) stars ? this.starNames.show() : this.starNames.hide();
   }
 
   /** Survey automatica: Mellinger per il cielo intero, DSS2 da vicino (o l'unica disponibile). */
@@ -341,11 +414,22 @@ export class SkyMap {
     this.updateLayers();
   }
 
-  focus(id: string): void {
-    const marker = this.markers.get(id);
+  /** Vola sull'oggetto; se non ha un marker sulla mappa usa la posizione indicata. */
+  focus(id: string, fallback?: { ra: number; dec: number; kind: Kind }): void {
+    const marker = this.markers.get(id) ?? (fallback ? { ...fallback } : undefined);
     if (!marker) return;
     const fov = FOCUS_FOV[id] ?? KIND_FOV[marker.kind] ?? 1;
     this.flyTo(marker.ra * 15, marker.dec, fov);
+  }
+
+  /** Campo massimo orizzontale (quello che Aladin limita): sugli schermi verticali è più stretto. */
+  private maxFov(): number {
+    const ratio = this.host.clientWidth / Math.max(1, this.host.clientHeight);
+    return MAX_FOV * Math.min(1, ratio);
+  }
+
+  isAtWidest(): boolean {
+    return this.aladin.getFov()[0] >= this.maxFov() * 0.97;
   }
 
   /** Vola su una posizione: prima si allarga se il bersaglio è lontano, poi si stringe. */
@@ -377,10 +461,11 @@ export class SkyMap {
   }
 
   zoomOut(): void {
-    this.aladin.decreaseZoom();
+    if (this.isAtWidest()) this.onZoomLimit();
+    else this.aladin.decreaseZoom();
   }
 
   reset(): void {
-    this.flyTo(START.ra, START.dec, START.fov);
+    this.flyTo(START.ra, START.dec, Math.min(START.fov, this.maxFov()));
   }
 }

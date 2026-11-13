@@ -25,7 +25,7 @@ const norm360 = (value: number) => ((value % 360) + 360) % 360;
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
 /** Giorni dal 2000 gennaio 0.0 (epoca usata dagli elementi orbitali di Schlyter). */
-function daysSinceEpoch(date: Date): number {
+export function daysSinceEpoch(date: Date): number {
   const year = date.getUTCFullYear();
   const month = date.getUTCMonth() + 1;
   const day = date.getUTCDate();
@@ -51,12 +51,12 @@ function solveKepler(meanAnomaly: number, eccentricity: number): number {
 }
 
 /** [N, N', i, i', w, w', a, a', e, e', M, M'] con angoli in gradi e ratei per giorno. */
-type Elements = [
+export type Elements = [
   number, number, number, number, number, number,
   number, number, number, number, number, number,
 ];
 
-const ORBITS: Record<string, Elements> = {
+export const ORBITS: Record<string, Elements> = {
   mercury: [48.3313, 3.24587e-5, 7.0047, 5e-8, 29.1241, 1.01444e-5, 0.387098, 0, 0.205635, 5.59e-10, 168.6562, 4.0923344368],
   venus: [76.6799, 2.4659e-5, 3.3946, 2.75e-8, 54.891, 1.38374e-5, 0.72333, 0, 0.006773, -1.302e-9, 48.0052, 1.6021302244],
   mars: [49.5574, 2.11081e-5, 1.8497, -1.78e-8, 286.5016, 2.92961e-5, 1.523688, 0, 0.093405, 2.516e-9, 18.6021, 0.5240207766],
@@ -66,14 +66,14 @@ const ORBITS: Record<string, Elements> = {
   neptune: [131.7806, 3.0173e-5, 1.77, -2.55e-7, 272.8461, -6.027e-6, 30.05826, 3.313e-8, 0.008606, 2.15e-9, 260.2471, 0.005995147],
 };
 
-interface Vector {
+export interface Vector {
   x: number;
   y: number;
   z: number;
 }
 
 /** Posizione eliocentrica (UA) nel piano eclittico. */
-function heliocentric(el: Elements, d: number) {
+export function heliocentric(el: Elements, d: number) {
   const node = (el[0] + el[1] * d) * DEG;
   const incl = (el[2] + el[3] * d) * DEG;
   const peri = (el[4] + el[5] * d) * DEG;
@@ -97,7 +97,7 @@ function heliocentric(el: Elements, d: number) {
 }
 
 /** Posizione geocentrica del Sole (UA) e longitudine eclittica. */
-function sunGeocentric(d: number) {
+export function sunGeocentric(d: number) {
   const w = (282.9404 + 4.70935e-5 * d) * DEG;
   const ecc = 0.016709 - 1.151e-9 * d;
   const mean = norm360(356.047 + 0.9856002585 * d) * DEG;
@@ -120,7 +120,7 @@ function sunGeocentric(d: number) {
 }
 
 /** Posizione geocentrica della Luna in raggi terrestri, con le perturbazioni principali. */
-function moonPosition(d: number) {
+export function moonPosition(d: number) {
   const N = norm360(125.1228 - 0.0529538083 * d);
   const incl = 5.1454 * DEG;
   const w = 318.0634 + 0.1643573223 * d;
@@ -184,7 +184,7 @@ function moonPosition(d: number) {
 }
 
 /** Da coordinate eclittiche geocentriche a RA (ore) e Dec (gradi). */
-function toEquatorial(v: Vector, d: number): { ra: number; dec: number } {
+export function toEquatorial(v: Vector, d: number): { ra: number; dec: number } {
   const eps = (23.4393 - 3.563e-7 * d) * DEG;
   const xe = v.x;
   const ye = v.y * Math.cos(eps) - v.z * Math.sin(eps);

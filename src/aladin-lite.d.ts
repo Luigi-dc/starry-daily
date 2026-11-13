@@ -41,6 +41,7 @@ declare module "aladin-lite" {
     animateToRaDec(ra: number, dec: number, durationSeconds?: number, complete?: () => void): void;
     zoomToFoV(fov: number, durationSeconds?: number, complete?: () => void): void;
     setFoV(fov: number): void;
+    setFoVRange(minFoV: number, maxFoV: number): void;
     getFov(): [number, number];
     getRaDec(): [number, number];
     increaseZoom(): void;

@@ -1,0 +1,90 @@
+{
+  "sun": {
+    "credit": "NASA/SDO, HMI (immagine del giorno in cui è stata generata la texture)",
+    "source": "https://sdo.gsfc.nasa.gov/assets/img/latest/latest_2048_HMIIC.jpg"
+  },
+  "mercury": {
+    "credit": "NASA/Johns Hopkins APL/Carnegie Institution, MESSENGER (PIA15063)",
+    "source": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia15/pia15063/PIA15063.jpg"
+  },
+  "venus": {
+    "credit": "NASA/JPL/USGS, Magellan (radar della superficie, colorizzato)",
+    "source": "https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Venus_Magellan_C3-MDIR_Colorized_Global_Mosaic_4641m.tif"
+  },
+  "earth": {
+    "credit": "NASA Earth Observatory, Blue Marble Next Generation (novembre)",
+    "source": "https://assets.science.nasa.gov/content/dam/science/esd/eo/images/bmng/bmng-topography-bathymetry/november/world.topo.bathy.200411.3x5400x2700.jpg"
+  },
+  "moon": {
+    "credit": "NASA Scientific Visualization Studio, LRO/LROC (CGI Moon Kit)",
+    "source": "https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/lroc_color_poles_4k.tif"
+  },
+  "mars": {
+    "credit": "NASA/JPL/USGS, Viking (MDIM 2.1 a colori)",
+    "source": "https://astrogeology.usgs.gov/ckan/dataset/7131d503-cdc9-45a5-8f83-5126c0fd397e/resource/5ea881c6-01b3-41fa-a7af-42d2131b54f1/download/mars_viking_mdim21_clrmosaic_1km.jpg"
+  },
+  "phobos": {
+    "credit": "NASA/JPL/USGS/DLR, Viking",
+    "source": "https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Phobos_Viking_Mosaic_40ppd_DLRcontrol.tif"
+  },
+  "jupiter": {
+    "credit": "NASA/JPL/Space Science Institute, Cassini (PIA07782)",
+    "source": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia07/pia07782/PIA07782.jpg"
+  },
+  "io": {
+    "credit": "NASA/JPL/USGS, Galileo e Voyager",
+    "source": "https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Io_GalileoSSI-Voyager_Global_Mosaic_ClrMerge_1km.tif"
+  },
+  "europa": {
+    "credit": "NASA/JPL/USGS, Galileo e Voyager",
+    "source": "https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Europa_Voyager_GalileoSSI_global_mosaic_500m.tif"
+  },
+  "ganymede": {
+    "credit": "NASA/JPL/USGS, Galileo e Voyager",
+    "source": "https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Ganymede_Voyager_GalileoSSI_Global_ClrMosaic_1435m.tif"
+  },
+  "callisto": {
+    "credit": "NASA/JPL/USGS, Galileo e Voyager",
+    "source": "https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Callisto_Voyager_GalileoSSI_global_mosaic_1km.tif"
+  },
+  "saturn": {
+    "credit": "NASA/JPL/Space Science Institute, Cassini (profilo dei colori da PIA11141)",
+    "source": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia11/pia11141/PIA11141.jpg"
+  },
+  "enceladus": {
+    "credit": "NASA/JPL/Space Science Institute/USGS, Cassini",
+    "source": "https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Enceladus_Cassini_mosaic_global_110m.tif"
+  },
+  "titan": {
+    "credit": "NASA/JPL/Space Science Institute/USGS, Cassini (superficie a 938 nm, tinta della foschia)",
+    "source": "https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Titan_ISS_P19658_Mosaic_Global_4km.tif"
+  },
+  "uranus": {
+    "credit": "NASA/JPL, Voyager 2 (profilo dei colori da PIA18182)",
+    "source": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia18/pia18182/PIA18182.jpg"
+  },
+  "neptune": {
+    "credit": "NASA/JPL, Voyager 2 (da PIA01492)",
+    "source": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia01/pia01492/PIA01492.jpg"
+  },
+  "triton": {
+    "credit": "NASA/JPL/USGS, Voyager 2 (il nord non è mai stato fotografato)",
+    "source": "https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Triton_Voyager2_ClrMosaic_GlobalFill_600m.tif"
+  },
+  "ceres": {
+    "credit": "NASA/JPL-Caltech/UCLA/MPS/DLR/IDA, Dawn",
+    "source": "https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Ceres_Dawn_FC_DLR_global_20ppd_Oct2015.tif"
+  },
+  "vesta": {
+    "credit": "NASA/JPL-Caltech/UCLA/MPS/DLR/IDA, Dawn",
+    "source": "https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Vesta_Dawn_FC_HAMO_Mosaic_Global_74ppd.tif"
+  },
+  "pluto": {
+    "credit": "NASA/Johns Hopkins APL/SwRI, New Horizons (PIA19956; il sud non è mai stato fotografato)",
+    "source": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia19/pia19956/PIA19956.jpg"
+  },
+  "charon": {
+    "credit": "NASA/Johns Hopkins APL/SwRI, New Horizons (PIA19866; il sud non è mai stato fotografato)",
+    "source": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia19/pia19866/PIA19866.jpg"
+  }
+}

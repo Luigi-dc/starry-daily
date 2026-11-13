@@ -10,4 +10,10 @@ export const KIND_COLOR: Record<Kind, string> = {
   planet: "#ffd27a",
   moon: "#e8ecf5",
   sun: "#ffbf4d",
+  dwarf: "#d9c3a5",
+  asteroid: "#c9b8a0",
+  comet: "#8ff0e0",
+  star: "#fff1d6",
+  probe: "#7fd8ff",
+  structure: "#b7a6ff",
 };

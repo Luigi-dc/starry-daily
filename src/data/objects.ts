@@ -6,7 +6,13 @@ export type Kind =
   | "blackhole"
   | "planet"
   | "moon"
-  | "sun";
+  | "sun"
+  | "dwarf"
+  | "asteroid"
+  | "comet"
+  | "star"
+  | "probe"
+  | "structure";
 
 export interface SkyObject {
   id: string;
@@ -29,6 +35,12 @@ export const KIND_LABEL: Record<Kind, string> = {
   planet: "Pianeta",
   moon: "Satellite",
   sun: "Stella",
+  dwarf: "Pianeta nano",
+  asteroid: "Asteroide",
+  comet: "Cometa",
+  star: "Stella",
+  probe: "Sonda spaziale",
+  structure: "Struttura cosmica",
 };
 
 export const OBJECTS: SkyObject[] = [

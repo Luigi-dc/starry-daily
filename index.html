@@ -3,45 +3,107 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#05060e" />
-    <title>Starry Daily — planetario e notizie dallo spazio</title>
+    <meta name="theme-color" content="#03040a" />
+    <title>Starry Daily — planetario e universo 3D</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a0d1a'/%3E%3Cpath d='M16 5l2.6 7.4L26 15l-7.4 2.6L16 25l-2.6-7.4L6 15l7.4-2.6z' fill='%237fd8ff'/%3E%3C/svg%3E"
     />
   </head>
-  <body>
-    <main class="sky-wrap">
+  <body data-mode="sky">
+    <main class="stage">
       <div id="sky" class="sky" aria-label="Mappa del cielo navigabile"></div>
+      <div id="universe" class="universe" aria-label="Universo 3D navigabile" hidden></div>
       <div class="sky-loading" id="sky-loading">
         <span class="spinner" aria-hidden="true"></span>
         <span id="sky-loading-text">Carico il cielo…</span>
       </div>
 
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">✦</span>
+          <div class="brand-text">
+            <h1>Starry Daily</h1>
+            <p id="today"></p>
+          </div>
+        </div>
+
+        <div class="mode-switch" role="tablist" aria-label="Modalità di visualizzazione">
+          <button class="mode-btn is-active" id="mode-sky" data-mode="sky" role="tab" aria-selected="true" type="button">
+            <span class="mode-icon" aria-hidden="true">◐</span><span class="mode-long">Cielo dalla Terra</span><span class="mode-short">Cielo</span>
+          </button>
+          <button class="mode-btn" id="mode-universe" data-mode="universe" role="tab" aria-selected="false" type="button">
+            <span class="mode-icon" aria-hidden="true">✺</span><span class="mode-long">Universo 3D</span><span class="mode-short">Universo</span>
+          </button>
+        </div>
+
+        <div class="search">
+          <div class="search-field">
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input
+              class="search-input"
+              id="search-input"
+              type="search"
+              placeholder="Cerca: Giove, Plutone, Sirio, Andromeda, M42…"
+              autocomplete="off"
+              spellcheck="false"
+              role="combobox"
+              aria-label="Cerca nel cielo e nello spazio"
+              aria-expanded="false"
+              aria-controls="search-results"
+            />
+            <kbd class="search-kbd" aria-hidden="true">/</kbd>
+          </div>
+          <div class="search-results" id="search-results" role="listbox" aria-label="Risultati" hidden></div>
+        </div>
+
+        <button class="pill-btn news-toggle" id="news-toggle" type="button" aria-controls="panel" aria-expanded="false">
+          <span aria-hidden="true">☰</span><span class="news-toggle-label">Notizie e foto</span>
+        </button>
+      </header>
+
       <div class="hud hud-top">
-        <div class="chips" id="kind-chips" role="group" aria-label="Mostra sulla mappa"></div>
+        <div class="chips sky-only" id="kind-chips" role="group" aria-label="Mostra sulla mappa"></div>
+        <div class="chips universe-only" id="scale-chips" role="group" aria-label="Scala dell'universo"></div>
       </div>
 
       <div class="hud hud-bottom">
-        <div class="hud-readout">
+        <div class="hud-readout sky-only">
           <span id="hud-coords">RA — · Dec —</span>
           <span class="hud-sep" aria-hidden="true">·</span>
           <span id="hud-fov">campo —</span>
+        </div>
+        <div class="hud-readout universe-only">
+          <span class="scale-bar" id="u-scale-bar" aria-hidden="true"></span>
+          <span id="u-scale">—</span>
+          <span class="hud-sep" aria-hidden="true">·</span>
+          <span id="u-level">—</span>
+          <span class="hud-sep" aria-hidden="true">·</span>
+          <span id="u-from-sun">—</span>
         </div>
         <div class="hud-controls">
           <div class="btn-group">
             <button class="icon-btn" id="zoom-out" type="button" aria-label="Allontana">−</button>
             <button class="icon-btn" id="zoom-in" type="button" aria-label="Avvicina">+</button>
           </div>
-          <button class="pill-btn is-on" id="toggle-constellations" type="button" aria-pressed="true">Costellazioni</button>
-          <label class="select-wrap">
+          <button class="pill-btn is-on sky-only" id="toggle-constellations" type="button" aria-pressed="true">Costellazioni</button>
+          <label class="select-wrap sky-only">
             <span class="sr-only">Immagine del cielo</span>
             <select id="survey" class="select"></select>
           </label>
           <button class="pill-btn" id="reset" type="button">Ricentra</button>
         </div>
-        <p class="hud-hint">Trascina per muoverti · rotella o pinch per lo zoom · clicca un nome per la scheda</p>
+        <p class="hud-hint sky-only">Trascina per muoverti · rotella o pinch per lo zoom · clicca un nome per la scheda</p>
+        <p class="hud-hint universe-only">Trascina per ruotare · rotella o pinch per attraversare le scale · clicca un nome per volarci</p>
       </div>
+
+      <button class="launch-btn" id="to-universe" type="button" hidden>
+        <span class="launch-glow" aria-hidden="true"></span>
+        Esci dal cielo: vola nell'<strong>Universo 3D</strong> →
+      </button>
 
       <section class="detail" id="detail" hidden aria-live="polite">
         <button class="close-btn" id="detail-close" type="button" aria-label="Chiudi scheda">✕</button>
@@ -49,51 +111,32 @@
           <canvas id="detail-planet" hidden></canvas>
           <span class="detail-badge" id="detail-badge"></span>
         </div>
+        <p class="detail-credit" id="detail-credit"></p>
         <div class="detail-body">
           <p class="eyebrow" id="detail-kind"></p>
           <h2 id="detail-name"></h2>
           <p class="detail-meta" id="detail-meta"></p>
           <p class="detail-desc" id="detail-desc"></p>
           <dl class="facts" id="detail-facts" hidden></dl>
+          <div class="detail-actions">
+            <button class="pill-btn detail-action" id="detail-to-universe" type="button" hidden>✺ Vola nello spazio 3D</button>
+            <button class="pill-btn detail-action" id="detail-to-sky" type="button" hidden>◐ Guarda dalla Terra</button>
+            <a class="pill-btn detail-action" id="detail-link" target="_blank" rel="noopener noreferrer" hidden>Scheda NASA ↗</a>
+          </div>
         </div>
       </section>
     </main>
 
-    <aside class="panel" id="panel">
+    <aside class="panel" id="panel" aria-label="Notizie e foto dallo spazio">
       <button class="panel-handle" id="panel-handle" type="button" aria-expanded="false" aria-controls="panel">
         <span class="panel-grip" aria-hidden="true"></span>
         <span>Notizie e foto dallo spazio</span>
       </button>
 
       <header class="panel-head">
-        <div class="brand">
-          <span class="brand-mark" aria-hidden="true">✦</span>
-          <div>
-            <h1>Starry Daily</h1>
-            <p id="today"></p>
-          </div>
-        </div>
+        <h2>Dallo spazio, oggi</h2>
+        <button class="close-btn panel-close" id="panel-close" type="button" aria-label="Chiudi notizie e foto">✕</button>
       </header>
-
-      <div class="search">
-        <div class="search-field">
-          <span class="search-icon" aria-hidden="true">⌕</span>
-          <input
-            class="search-input"
-            id="search-input"
-            type="search"
-            placeholder="Cerca: Giove, M31, Orione, NGC 7000…"
-            autocomplete="off"
-            spellcheck="false"
-            role="combobox"
-            aria-label="Cerca nel cielo"
-            aria-expanded="false"
-            aria-controls="search-results"
-          />
-          <kbd class="search-kbd" aria-hidden="true">/</kbd>
-        </div>
-        <div class="search-results" id="search-results" role="listbox" aria-label="Risultati" hidden></div>
-      </div>
 
       <div class="tabs" role="tablist" aria-label="Contenuti">
         <button class="tab is-active" id="tab-news" data-tab="news" role="tab" aria-selected="true" aria-controls="view-news" type="button">Notizie</button>
@@ -125,9 +168,11 @@
       </div>
 
       <footer class="panel-foot">
-        Cielo: Aladin Lite · CDS Strasburgo. Notizie: Spaceflight News API, NASA Science. Foto: NASA, NOAA, ESA.
+        Cielo: Aladin Lite · CDS Strasburgo. Stelle 3D: HYG Database (CC BY-SA 4.0). Orbite: JPL Small-Body Database.
+        Notizie: Spaceflight News API, NASA Science. Foto: NASA, NOAA, ESA.
       </footer>
     </aside>
+    <div class="panel-scrim" id="panel-scrim" hidden></div>
 
     <section class="reader" id="reader" hidden role="dialog" aria-modal="true" aria-labelledby="reader-title">
       <div class="reader-scrim" id="reader-scrim"></div>

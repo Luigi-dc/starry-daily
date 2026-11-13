@@ -3,13 +3,15 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Planetario con il cielo reale (Aladin Lite), notizie spaziali e foto dallo spazio in tempo reale.",
+  "description": "Planetario con il cielo reale (Aladin Lite), Universo 3D dal Sistema solare all'universo osservabile, notizie spaziali e foto dallo spazio in tempo reale.",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "fetch:sky": "node scripts/fetch-sky.mjs",
-    "fetch:deepsky": "node scripts/fetch-deepsky.mjs"
+    "fetch:deepsky": "node scripts/fetch-deepsky.mjs",
+    "fetch:stars3d": "node scripts/fetch-stars3d.mjs",
+    "fetch:textures": "python3 scripts/fetch-textures.py"
   },
   "dependencies": {
     "aladin-lite": "3.8.2",
